@@ -17,7 +17,7 @@ use App\Rules\Captcha;
 use Modules\Blog\App\Models\Blog;
 use Modules\Blog\App\Models\BlogCategory;
 use Modules\Blog\App\Models\BlogComment;
-use Modules\Category\Entities\Category;
+use Modules\Category\App\Models\Category;
 use Modules\Currency\App\Models\Currency;
 use Modules\FAQ\App\Models\Faq;
 use Modules\GlobalSetting\App\Models\GlobalSetting;
@@ -541,7 +541,7 @@ class HomeController extends Controller
         app()->setLocale($request->lang_code);
 
         $notify_message = trans('translate.Language switched successful');
-        if (env('APP_MODE') == 'DEMO') {
+        if (config('app.mode') == 'DEMO') {
             $notify_message = ['message' => $notify_message, 'alert-type' => 'success', 'demo_mode' => 'Demo mode not tranlsate all language'];
         }
         else {

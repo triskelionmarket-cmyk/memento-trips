@@ -48,16 +48,16 @@ class ProfileController extends Controller
                 ->get();
 
             // Core money metrics
-            $total_income = (float) Booking::where('agency_user_id', $user->id)
+            $total_income = (float)Booking::where('agency_user_id', $user->id)
                 ->whereIn('payment_status', $paidPaymentStatuses)
                 ->sum('total');
 
-            $confirm_booking = (int) Booking::where('agency_user_id', $user->id)
+            $confirm_booking = (int)Booking::where('agency_user_id', $user->id)
                 ->where('booking_status', 'confirmed')
                 ->count();
 
             // Meaning becomes "distinct services booked by agency"
-            $total_services = (int) Booking::where('agency_user_id', $user->id)
+            $total_services = (int)Booking::where('agency_user_id', $user->id)
                 ->distinct()
                 ->count('service_id');
 
@@ -65,34 +65,35 @@ class ProfileController extends Controller
             $hasAgencyClientsTable = Schema::hasTable('agency_clients') && Schema::hasColumn('agency_clients', 'agency_user_id');
 
             $total_clients = $hasAgencyClientsTable
-                ? (int) AgencyClient::where('agency_user_id', $user->id)->count()
+                ? (int)AgencyClient::where('agency_user_id', $user->id)->count()
                 : 0;
 
-            $total_bookings = (int) Booking::where('agency_user_id', $user->id)->count();
+            $total_bookings = (int)Booking::where('agency_user_id', $user->id)->count();
 
-            $pending_bookings = (int) Booking::where('agency_user_id', $user->id)
+            $pending_bookings = (int)Booking::where('agency_user_id', $user->id)
                 ->where('booking_status', 'pending')
                 ->count();
 
-            $due_to_collect = (float) Booking::where('agency_user_id', $user->id)
+            $due_to_collect = (float)Booking::where('agency_user_id', $user->id)
                 ->where('due_amount', '>', 0)
                 ->whereNotIn('payment_status', $paidPaymentStatuses)
                 ->sum('due_amount');
 
             // Commission logic (prefer snapshot per booking)
-            $commission_type = (string) GlobalSetting::where('key', 'commission_type')->value('value');
-            $commission_per_sale = (float) GlobalSetting::where('key', 'commission_per_sale')->value('value');
+            $commission_type = (string)GlobalSetting::where('key', 'commission_type')->value('value');
+            $commission_per_sale = (float)GlobalSetting::where('key', 'commission_per_sale')->value('value');
 
             $total_commission = 0.0;
             $net_income = $total_income;
 
             if (Schema::hasColumn('bookings', 'commission_amount')) {
-                $total_commission = (float) Booking::where('agency_user_id', $user->id)
+                $total_commission = (float)Booking::where('agency_user_id', $user->id)
                     ->whereIn('payment_status', $paidPaymentStatuses)
                     ->sum('commission_amount');
 
-                $net_income = (float) $total_income - (float) $total_commission;
-            } else {
+                $net_income = (float)$total_income - (float)$total_commission;
+            }
+            else {
                 if ('commission' === $commission_type && $commission_per_sale > 0) {
                     $total_commission = ($commission_per_sale / 100) * $total_income;
                     $net_income = $total_income - $total_commission;
@@ -100,13 +101,13 @@ class ProfileController extends Controller
             }
 
             // Withdrawals (existing seller payout logic)
-            $total_withdraw_amount = (float) SellerWithdraw::where('seller_id', $user->id)
+            $total_withdraw_amount = (float)SellerWithdraw::where('seller_id', $user->id)
                 ->where('status', '!=', 'rejected')
                 ->sum('total_amount');
 
-            $current_balance = (float) $net_income - (float) $total_withdraw_amount;
+            $current_balance = (float)$net_income - (float)$total_withdraw_amount;
 
-            $pending_withdraw = (float) SellerWithdraw::where('seller_id', $user->id)
+            $pending_withdraw = (float)SellerWithdraw::where('seller_id', $user->id)
                 ->where('status', 'pending')
                 ->sum('total_amount');
 
@@ -120,7 +121,7 @@ class ProfileController extends Controller
             while ($cursor->lte($end)) {
                 $labels[] = $cursor->format('d');
 
-                $sum = (float) Booking::where('agency_user_id', $user->id)
+                $sum = (float)Booking::where('agency_user_id', $user->id)
                     ->whereDate('created_at', $cursor->toDateString())
                     ->whereIn('payment_status', $paidPaymentStatuses)
                     ->sum('total');
@@ -141,10 +142,10 @@ class ProfileController extends Controller
                 ->toArray();
 
             $statusCounts = [
-                'pending' => (int) ($statusCountsRaw['pending'] ?? 0),
-                'confirmed' => (int) ($statusCountsRaw['confirmed'] ?? 0),
-                'completed' => (int) ($statusCountsRaw['completed'] ?? 0),
-                'cancelled' => (int) ($statusCountsRaw['cancelled'] ?? 0),
+                'pending' => (int)($statusCountsRaw['pending'] ?? 0),
+                'confirmed' => (int)($statusCountsRaw['confirmed'] ?? 0),
+                'success' => (int)($statusCountsRaw['success'] ?? 0),
+                'cancelled' => (int)($statusCountsRaw['cancelled'] ?? 0),
             ];
 
             // Top 5 clients by paid revenue (this month) - safe if table missing
@@ -202,18 +203,18 @@ class ProfileController extends Controller
             ->take(10)
             ->get();
 
-        $total_income = (float) Booking::whereIn('service_id', $servicesIds)
+        $total_income = (float)Booking::whereIn('service_id', $servicesIds)
             ->where('payment_status', 'success')
             ->sum('total');
 
-        $confirm_booking = (int) Booking::whereIn('service_id', $servicesIds)
+        $confirm_booking = (int)Booking::whereIn('service_id', $servicesIds)
             ->where('booking_status', 'confirmed')
             ->count();
 
-        $total_services = (int) Service::where('user_id', $user->id)->count();
+        $total_services = (int)Service::where('user_id', $user->id)->count();
 
-        $commission_type = (string) GlobalSetting::where('key', 'commission_type')->value('value');
-        $commission_per_sale = (float) GlobalSetting::where('key', 'commission_per_sale')->value('value');
+        $commission_type = (string)GlobalSetting::where('key', 'commission_type')->value('value');
+        $commission_per_sale = (float)GlobalSetting::where('key', 'commission_per_sale')->value('value');
 
         $total_commission = 0.0;
         $net_income = $total_income;
@@ -223,13 +224,13 @@ class ProfileController extends Controller
             $net_income = $total_income - $total_commission;
         }
 
-        $total_withdraw_amount = (float) SellerWithdraw::where('seller_id', $user->id)
+        $total_withdraw_amount = (float)SellerWithdraw::where('seller_id', $user->id)
             ->where('status', '!=', 'rejected')
             ->sum('total_amount');
 
-        $current_balance = (float) $net_income - (float) $total_withdraw_amount;
+        $current_balance = (float)$net_income - (float)$total_withdraw_amount;
 
-        $pending_withdraw = (float) SellerWithdraw::where('seller_id', $user->id)
+        $pending_withdraw = (float)SellerWithdraw::where('seller_id', $user->id)
             ->where('status', 'pending')
             ->sum('total_amount');
 
@@ -243,7 +244,7 @@ class ProfileController extends Controller
         while ($cursor->lte($end)) {
             $labels[] = $cursor->format('d');
 
-            $sum = (float) Booking::whereDate('created_at', $cursor->toDateString())
+            $sum = (float)Booking::whereDate('created_at', $cursor->toDateString())
                 ->whereIn('service_id', $servicesIds)
                 ->where('payment_status', 'success')
                 ->sum('total');
@@ -293,16 +294,16 @@ class ProfileController extends Controller
             $user_image = $request->image;
             $extention = $user_image->getClientOriginalExtension();
 
-            $image_name = Str::slug($user->name).date('-Y-m-d-h-i-s-').rand(999, 9999).'.'.$extention;
-            $image_name = 'uploads/custom-images/'.$image_name;
+            $image_name = Str::slug($user->name) . date('-Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $extention;
+            $image_name = 'uploads/custom-images/' . $image_name;
 
-            Image::make($user_image)->save(public_path().'/'.$image_name);
+            Image::read($user_image)->save(public_path() . '/' . $image_name);
 
             $user->image = $image_name;
             $user->save();
 
-            if ($old_image && File::exists(public_path().'/'.$old_image)) {
-                unlink(public_path().'/'.$old_image);
+            if ($old_image && File::exists(public_path() . '/' . $old_image)) {
+                unlink(public_path() . '/' . $old_image);
             }
         }
 
@@ -371,19 +372,19 @@ class ProfileController extends Controller
         if ($request->hasFile('agency_logo')) {
             $old_agency_logo = $user->agency_logo;
 
-            if ($old_agency_logo && File::exists(public_path().'/'.$old_agency_logo)) {
-                unlink(public_path().'/'.$old_agency_logo);
+            if ($old_agency_logo && File::exists(public_path() . '/' . $old_agency_logo)) {
+                unlink(public_path() . '/' . $old_agency_logo);
             }
 
             $file = $request->file('agency_logo');
 
-            $imageName = 'uploads/custom-images/'.
-                Str::slug($user->agency_name).'-'.
-                now()->format('YmdHis').'-'.
-                rand(1000, 9999).'.'.
+            $imageName = 'uploads/custom-images/' .
+                Str::slug($user->agency_name) . '-' .
+                now()->format('YmdHis') . '-' .
+                rand(1000, 9999) . '.' .
                 $file->getClientOriginalExtension();
 
-            Image::make($file)->save(public_path($imageName));
+            Image::read($file)->save(public_path($imageName));
 
             $user->agency_logo = $imageName;
             $user->save();
@@ -419,8 +420,8 @@ class ProfileController extends Controller
 
         // Delete user image
         $user_image = $user->image;
-        if ($user_image && File::exists(public_path().'/'.$user_image)) {
-            unlink(public_path().'/'.$user_image);
+        if ($user_image && File::exists(public_path() . '/' . $user_image)) {
+            unlink(public_path() . '/' . $user_image);
         }
 
         $user_id = $user->id;
@@ -449,7 +450,7 @@ class ProfileController extends Controller
                     $exist_file_name = $document->file_name;
 
                     if ($exist_file_name) {
-                        $path = public_path('uploads/custom-images').'/'.$exist_file_name;
+                        $path = public_path('uploads/custom-images') . '/' . $exist_file_name;
                         if (File::exists($path)) {
                             unlink($path);
                         }

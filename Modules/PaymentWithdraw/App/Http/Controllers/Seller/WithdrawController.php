@@ -5,6 +5,7 @@ namespace Modules\PaymentWithdraw\App\Http\Controllers\Seller;
 // ── Framework Dependencies ──────────────────────────────────────────────────
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use App\Http\Controllers\Controller;
 
 // ── Module Dependencies ─────────────────────────────────────────────────────
@@ -28,32 +29,45 @@ class WithdrawController extends Controller
      */
     public function index()
     {
-
         $user = Auth::guard('web')->user();
 
         $withdraw_list = SellerWithdraw::where('seller_id', $user->id)->latest()->get();
 
-        $servicesIds = Service::where('user_id', $user->id)->pluck('id')->toArray();
+        // ── Agency CRM logic (matches dashboard calculation) ────────────────
+        $paidPaymentStatuses = ['success', 'completed'];
 
-        $total_income = Booking::whereIn('service_id', $servicesIds)->where('payment_status', 'success')->sum('total');
+        $total_income = (float)Booking::where('agency_user_id', $user->id)
+            ->whereIn('payment_status', $paidPaymentStatuses)
+            ->sum('total');
 
-        $commission_type = GlobalSetting::where('key', 'commission_type')->value('value');
-        $commission_per_sale = GlobalSetting::where('key', 'commission_per_sale')->value('value');
+        $commission_type = (string)GlobalSetting::where('key', 'commission_type')->value('value');
+        $commission_per_sale = (float)GlobalSetting::where('key', 'commission_per_sale')->value('value');
 
-        $total_commission = 0.00;
+        $total_commission = 0.0;
         $net_income = $total_income;
-        if ($commission_type == 'commission') {
-            $total_commission = ($commission_per_sale / 100) * $total_income;
+
+        if (Schema::hasColumn('bookings', 'commission_amount')) {
+            $total_commission = (float)Booking::where('agency_user_id', $user->id)
+                ->whereIn('payment_status', $paidPaymentStatuses)
+                ->sum('commission_amount');
             $net_income = $total_income - $total_commission;
         }
+        else {
+            if ('commission' === $commission_type && $commission_per_sale > 0) {
+                $total_commission = ($commission_per_sale / 100) * $total_income;
+                $net_income = $total_income - $total_commission;
+            }
+        }
 
-        $pending_success_list = SellerWithdraw::where('seller_id', $user->id)->where('status', '!=', 'rejected')->sum('total_amount');
+        $total_withdraw_amount = (float)SellerWithdraw::where('seller_id', $user->id)
+            ->where('status', '!=', 'rejected')
+            ->sum('total_amount');
 
-        $total_withdraw_amount = $pending_success_list;
+        $current_balance = (float)$net_income - $total_withdraw_amount;
 
-        $current_balance = $net_income - $total_withdraw_amount;
-
-        $pending_withdraw = SellerWithdraw::where('seller_id', $user->id)->where('status', 'pending')->sum('total_amount');
+        $pending_withdraw = (float)SellerWithdraw::where('seller_id', $user->id)
+            ->where('status', 'pending')
+            ->sum('total_amount');
 
         return view('paymentwithdraw::seller.index', [
             'withdraw_list' => $withdraw_list,
@@ -96,23 +110,34 @@ class WithdrawController extends Controller
 
         $method = WithdrawMethod::findOrFail($request->method_id);
 
-        $withdraw_list = SellerWithdraw::where('seller_id', $user->id)->where('status', '!=', 'rejected')->get();
+        $already_withdraw_amount = (float)SellerWithdraw::where('seller_id', $user->id)
+            ->where('status', '!=', 'rejected')
+            ->sum('total_amount');
 
-        $already_withdraw_amount = $withdraw_list->sum('total_amount');
+        // ── Agency CRM logic (matches dashboard calculation) ────────────────
+        $paidPaymentStatuses = ['success', 'completed'];
 
-        $servicesIds = Service::where('user_id', $user->id)->pluck('id')->toArray();
+        $total_income = (float)Booking::where('agency_user_id', $user->id)
+            ->whereIn('payment_status', $paidPaymentStatuses)
+            ->sum('total');
 
-        $my_income = $total_income = Booking::whereIn('service_id', $servicesIds)->where('payment_status', 'success')->sum('total');
-        ;
+        $commission_type = (string)GlobalSetting::where('key', 'commission_type')->value('value');
+        $commission_per_sale = (float)GlobalSetting::where('key', 'commission_per_sale')->value('value');
 
-        $commission_type = GlobalSetting::where('key', 'commission_type')->value('value');
-        $commission_per_sale = GlobalSetting::where('key', 'commission_per_sale')->value('value');
+        $total_commission = 0.0;
+        $net_income = $total_income;
 
-        $total_commission = 0.00;
-        $net_income = $my_income;
-        if ($commission_type == 'commission') {
-            $total_commission = ($commission_per_sale / 100) * $my_income;
-            $net_income = $my_income - $total_commission;
+        if (Schema::hasColumn('bookings', 'commission_amount')) {
+            $total_commission = (float)Booking::where('agency_user_id', $user->id)
+                ->whereIn('payment_status', $paidPaymentStatuses)
+                ->sum('commission_amount');
+            $net_income = $total_income - $total_commission;
+        }
+        else {
+            if ('commission' === $commission_type && $commission_per_sale > 0) {
+                $total_commission = ($commission_per_sale / 100) * $total_income;
+                $net_income = $total_income - $total_commission;
+            }
         }
 
         $current_balance = $net_income - $already_withdraw_amount;

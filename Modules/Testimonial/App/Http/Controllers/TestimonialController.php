@@ -5,7 +5,7 @@ namespace Modules\Testimonial\App\Http\Controllers;
 // ── Framework Dependencies ──────────────────────────────────────────────────
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
-use Intervention\Image\Facades\Image;
+use Intervention\Image\Laravel\Facades\Image;
 use App\Http\Controllers\Controller;
 
 // ── Module Dependencies ─────────────────────────────────────────────────────
@@ -52,7 +52,7 @@ class TestimonialController extends Controller
             $extention = $request->image->getClientOriginalExtension();
             $image_name = Str::slug($request->name) . date('-Ymdhis') . '.' . $extention;
             $image_name = 'uploads/custom-images/' . $image_name;
-            Image::make($request->image)
+            Image::read($request->image)
                 ->save(public_path() . '/' . $image_name);
             $testimonial->image = $image_name;
         }
@@ -108,7 +108,7 @@ class TestimonialController extends Controller
                 $extention = $request->image->getClientOriginalExtension();
                 $image_name = Str::slug($request->name) . date('-Ymdhis') . '.' . $extention;
                 $image_name = 'uploads/custom-images/' . $image_name;
-                Image::make($request->image)
+                Image::read($request->image)
                     ->save(public_path() . '/' . $image_name);
                 $testimonial->image = $image_name;
                 $testimonial->save();

@@ -5,7 +5,7 @@ namespace Modules\Page\App\Http\Controllers;
 // ── Framework Dependencies ──────────────────────────────────────────────────
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
-use Intervention\Image\Facades\Image;
+use Intervention\Image\Laravel\Facades\Image;
 use App\Http\Controllers\Controller;
 
 // ── Module Dependencies ─────────────────────────────────────────────────────
@@ -64,8 +64,8 @@ class ContactPageController extends Controller
             $old_image = $contact_us->image;
             $image_name = 'contact-image-' . date('-Y-m-d-h-i-s-') . rand(999, 9999) . '.webp';
             $image_name = 'uploads/custom-images/' . $image_name;
-            Image::make($request->image)
-                ->encode('webp', 80)
+            Image::read($request->image)
+                ->toWebp(80)
                 ->save(public_path() . '/' . $image_name);
             $contact_us->image = $image_name;
             $contact_us->save();

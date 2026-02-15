@@ -1,16 +1,16 @@
 # Memento Trips
 
-Tour-booking & travel-agency platform built on **Laravel 10** with a modular architecture
+Tour-booking & travel-agency platform built on **Laravel 12** with a modular architecture
 (`nwidart/laravel-modules`).
 
 ## Requirements
 
 | Dependency | Version |
 |------------|---------|
-| PHP        | ≥ 8.1   |
-| MySQL      | ≥ 5.7   |
+| PHP        | ≥ 8.4   |
+| MySQL      | ≥ 8.4   |
 | Composer   | ≥ 2.x   |
-| Node.js    | ≥ 18    |
+| Node.js    | ≥ 22    |
 
 ## Quick Start
 
@@ -18,7 +18,7 @@ Tour-booking & travel-agency platform built on **Laravel 10** with a modular arc
 # 1. Clone
 git clone <repo-url> memento-trips && cd memento-trips
 
-# 2. Install
+# 2. Install PHP dependencies
 composer install
 cp .env.example .env
 php artisan key:generate
@@ -30,8 +30,20 @@ php artisan migrate --seed
 # 4. Storage link
 php artisan storage:link
 
-# 5. Serve
+# 5. Install & build frontend assets
+npm install
+npm run build
+
+# 6. Serve
 php artisan serve          # http://localhost:8000
+```
+
+### Development mode
+
+For hot-reloading during frontend development:
+
+```bash
+npm run dev
 ```
 
 ## Project Structure
@@ -109,7 +121,7 @@ php artisan theme:activate theme1
 | Package | Purpose |
 |---------|---------|
 | `nwidart/laravel-modules` | Modular architecture |
-| `intervention/image` | Image processing |
+| `intervention/image-laravel` | Image processing (Intervention v3) |
 | `barryvdh/laravel-dompdf` | PDF generation (invoices) |
 | `maatwebsite/excel` | Excel import/export |
 | `laravel/socialite` | Social login (Google, Facebook) |
@@ -125,7 +137,16 @@ See [`.env.example`](.env.example) for all available configuration keys.
 
 ## Deployment
 
-See [`DEPLOY.md`](DEPLOY.md) for Ploi.io deployment instructions.
+```bash
+# Production build
+composer install --no-dev --optimize-autoloader
+npm ci && npm run build
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan storage:link
+php artisan migrate --force
+```
 
 ## License
 

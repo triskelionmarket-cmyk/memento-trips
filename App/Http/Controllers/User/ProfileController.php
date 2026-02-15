@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Intervention\Image\Facades\Image;
+use Intervention\Image\Laravel\Facades\Image;
 
 // ── Application Dependencies ────────────────────────────────────────────────
 use App\Http\Controllers\Controller;
@@ -117,7 +117,7 @@ class ProfileController extends Controller
             $image_name = Str::slug($user->name) . date('-Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $extention;
             $image_name = 'uploads/custom-images/' . $image_name;
 
-            Image::make($user_image)->save(public_path() . '/' . $image_name);
+            Image::read($user_image)->save(public_path() . '/' . $image_name);
 
             $user->image = $image_name;
             $user->save();
@@ -218,7 +218,7 @@ class ProfileController extends Controller
             $file = $request->file('agency_logo');
             $imageName = 'uploads/custom-images/' . Str::slug($user->agency_name) . '-' . now()->format('YmdHis') . '-' . rand(1000, 9999) . '.' . $file->getClientOriginalExtension();
 
-            Image::make($file)->save(public_path($imageName));
+            Image::read($file)->save(public_path($imageName));
 
             $user->agency_logo = $imageName;
             $user->save();

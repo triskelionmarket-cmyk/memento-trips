@@ -1,9 +1,9 @@
 <?php
 
-use Modules\Brand\Http\Controllers\BrandController;
+use Modules\Brand\App\Http\Controllers\BrandController;
 
 
-Route::group(['as'=> 'admin.', 'prefix' => 'admin/', 'middleware' => ['HtmlSpecialchars', 'MaintenanceMode','auth:admin']],function (){
+Route::group(['as' => 'admin.', 'prefix' => 'admin/', 'middleware' => ['HtmlSpecialchars', 'MaintenanceMode', 'auth:admin']], function () {
 
     Route::resource('brand', BrandController::class);
 

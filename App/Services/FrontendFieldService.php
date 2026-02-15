@@ -5,18 +5,18 @@ namespace App\Services;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Image;
+use Intervention\Image\Laravel\Facades\Image;
 use Illuminate\Support\Facades\Validator;
 
 class FrontendFieldService
 {
     protected $fieldTypes;
-    
+
     public function __construct()
     {
         $this->fieldTypes = Config::get('frontend-fields.field_types', []);
     }
-    
+
     /**
      * Render a field based on its type and configuration
      */
@@ -25,19 +25,19 @@ class FrontendFieldService
         if (!isset($this->fieldTypes[$type])) {
             throw new \InvalidArgumentException("Unsupported field type: {$type}");
         }
-        
+
         $fieldConfig = $this->fieldTypes[$type];
         $viewName = $fieldConfig['view'];
-        
+
         // Merge field options with defaults
         $mergedOptions = array_merge(
             $fieldConfig['options'] ?? [],
             $options
         );
-        
+
         // Generate a label from the name if not provided
         $label = $attributes['label'] ?? Str::title(str_replace(['_', '-'], ' ', $name));
-        
+
         return View::make($viewName, [
             'name' => $name,
             'label' => $label,
@@ -48,7 +48,7 @@ class FrontendFieldService
             'help' => $attributes['help'] ?? null
         ])->render();
     }
-    
+
     /**
      * Get validation rules for a field
      */
@@ -57,24 +57,26 @@ class FrontendFieldService
         if (!isset($this->fieldTypes[$type])) {
             throw new \InvalidArgumentException("Unsupported field type: {$type}");
         }
-        
+
         $fieldConfig = $this->fieldTypes[$type];
         $rules = [];
-        
+
         // Add required rule if specified
         if ($options['required'] ?? false) {
             $rules[] = 'required';
-        } else {
+        }
+        else {
             $rules[] = 'nullable';
         }
-        
+
         // Add base validation rules
         if (is_string($fieldConfig['validation'])) {
             $rules = array_merge($rules, explode('|', $fieldConfig['validation']));
-        } elseif (is_array($fieldConfig['validation'])) {
+        }
+        elseif (is_array($fieldConfig['validation'])) {
             $rules = array_merge($rules, $fieldConfig['validation']);
         }
-        
+
         // Add min/max rules if specified
         if (isset($options['min'])) {
             $rules[] = 'min:' . $options['min'];
@@ -82,7 +84,7 @@ class FrontendFieldService
         if (isset($options['max'])) {
             $rules[] = 'max:' . $options['max'];
         }
-        
+
         // Add specific rules based on field type
         switch ($type) {
             case 'email':
@@ -135,10 +137,10 @@ class FrontendFieldService
                 }
                 break;
         }
-        
+
         return array_unique($rules);
     }
-    
+
     /**
      * Process field value before saving
      */
@@ -147,7 +149,7 @@ class FrontendFieldService
         if ($value === null) {
             return null;
         }
-        
+
         switch ($type) {
             case 'image':
                 return $this->processImageUpload($value, $options);
@@ -166,7 +168,7 @@ class FrontendFieldService
                 return $value;
         }
     }
-    
+
     /**
      * Process image upload
      */
@@ -180,44 +182,45 @@ class FrontendFieldService
         if (!$image->isValid()) {
             return null;
         }
-        
+
         // Store the image in the public directory
         $filename = time() . '_' . Str::slug(pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $image->getClientOriginalExtension();
         $path = 'uploads/website-images/' . $filename;
-        
+
         // Create directory if it doesn't exist
         if (!file_exists(public_path('uploads/website-images'))) {
             mkdir(public_path('uploads/website-images'), 0755, true);
         }
-        
+
         $image->move(public_path('uploads/website-images'), $filename);
-        
+
         // Generate different sizes if specified
         if ($options['dimensions'] ?? false) {
             $sizes = Config::get('frontend-fields.image_sizes', []);
             foreach ($sizes as $size => [$width, $height]) {
                 $resizedFilename = "{$size}_{$filename}";
                 $resizedPath = "uploads/website-images/{$size}";
-                
+
                 // Create directory if it doesn't exist
                 if (!file_exists(public_path($resizedPath))) {
                     mkdir(public_path($resizedPath), 0755, true);
                 }
-                
+
                 try {
                     // Resize and save image
-                    $img = Image::make(public_path($path));
-                    $img->fit($width, $height)->save(public_path("{$resizedPath}/{$resizedFilename}"));
-                } catch (\Exception $e) {
+                    $img = Image::read(public_path($path));
+                    $img->cover($width, $height)->save(public_path("{$resizedPath}/{$resizedFilename}"));
+                }
+                catch (\Exception $e) {
                     // Log error but continue
                     \Log::error('Failed to resize image: ' . $e->getMessage());
                 }
             }
         }
-        
+
         return $path;
     }
-    
+
     /**
      * Process file upload
      */
@@ -231,21 +234,21 @@ class FrontendFieldService
         if (!$file->isValid()) {
             return null;
         }
-        
+
         // Store the file in the public directory
         $filename = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
         $path = 'uploads/website-files/' . $filename;
-        
+
         // Create directory if it doesn't exist
         if (!file_exists(public_path('uploads/website-files'))) {
             mkdir(public_path('uploads/website-files'), 0755, true);
         }
-        
+
         $file->move(public_path('uploads/website-files'), $filename);
-        
+
         return $path;
     }
-    
+
     /**
      * Process repeater values
      */
@@ -254,15 +257,15 @@ class FrontendFieldService
         if (!is_array($value)) {
             return [];
         }
-        
+
         $processedValues = [];
         foreach ($value as $index => $item) {
             if (!is_array($item)) {
                 continue;
             }
-            
+
             $processedItem = [];
-            
+
             // Process each item based on field type even if field configs aren't available
             foreach ($item as $fieldName => $fieldValue) {
                 if (isset($options['fields']) && is_array($options['fields']) && isset($options['fields'][$fieldName])) {
@@ -270,30 +273,32 @@ class FrontendFieldService
                     $field = $options['fields'][$fieldName];
                     $fieldType = $field['type'] ?? 'text';
                     $fieldOptions = $field['options'] ?? [];
-                    
+
                     $processedItem[$fieldName] = $this->processFieldValue(
                         $fieldValue,
                         $fieldType,
                         $fieldOptions
                     );
-                } else {
+                }
+                else {
                     // If no field config, detect type and process accordingly
                     if (is_object($fieldValue) && method_exists($fieldValue, 'isValid')) {
                         // This is a file upload (likely an image)
                         $processedItem[$fieldName] = $this->processImageUpload($fieldValue, []);
-                    } else {
+                    }
+                    else {
                         // Default behavior for other types
                         $processedItem[$fieldName] = $fieldValue;
                     }
                 }
             }
-            
+
             $processedValues[$index] = $processedItem;
         }
-        
+
         return array_values($processedValues); // Re-index array
     }
-    
+
     /**
      * Process color value
      */
@@ -302,11 +307,11 @@ class FrontendFieldService
         if (empty($value)) {
             return $options['defaultColor'] ?? null;
         }
-        
+
         // Ensure color value starts with #
         return '#' . ltrim($value, '#');
     }
-    
+
     /**
      * Process HTML value
      */
@@ -315,7 +320,7 @@ class FrontendFieldService
         if (empty($value)) {
             return null;
         }
-        
+
         // Sanitize HTML if needed
         return clean($value, [
             'HTML.Allowed' => 'p,b,i,u,strong,em,a[href|title],ul,ol,li,br,img[src|alt|title|width|height],h1,h2,h3,h4,h5,h6',
@@ -324,7 +329,7 @@ class FrontendFieldService
             'AutoFormat.RemoveEmpty' => true,
         ]);
     }
-    
+
     /**
      * Process select/multi-select value
      */
@@ -333,10 +338,10 @@ class FrontendFieldService
         if ($options['multiple'] ?? false) {
             return is_array($value) ? array_values(array_filter($value)) : [];
         }
-        
+
         return $value;
     }
-    
+
     /**
      * Get available field types
      */
@@ -344,7 +349,7 @@ class FrontendFieldService
     {
         return array_keys($this->fieldTypes);
     }
-    
+
     /**
      * Check if a field type is translatable
      */

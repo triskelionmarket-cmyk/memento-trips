@@ -1,6 +1,7 @@
 {{-- Base layout — head, scripts, header, footer, modals --}}
 <!DOCTYPE html>
 <html class="no-js" lang="en">
+
 <head>
     <!-- Meta Tags -->
     <meta charset="utf-8">
@@ -28,7 +29,7 @@
     <link rel="stylesheet" href="{{ asset('global/toastr/toastr.min.css') }}">
 
     {{-- ===== MOBILE BOTTOM BAR (front) — global ===== --}}
-    
+
     {{-- ===== END MOBILE BOTTOM BAR (front) ===== --}}
 
     @include('theme::components.front_mobile_bottom_bar_assets')
@@ -36,39 +37,44 @@
     @stack('style_section')
 
     @if ($general_setting->google_analytic_status == 1)
-        <script async src="https://www.googletagmanager.com/gtag/js?id={{ $general_setting->google_analytic_id }}"></script>
-        <script>
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){ dataLayer.push(arguments); }
-            gtag('js', new Date());
-            gtag('config', '{{ $general_setting->google_analytic_id }}');
-        </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ $general_setting->google_analytic_id }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', '{{ $general_setting->google_analytic_id }}');
+    </script>
     @endif
 
     @if ($general_setting->pixel_status == 1)
-        <script>
-            !function(f,b,e,v,n,t,s){
-                if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-                if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];
-                t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)
-            }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init','{{ $general_setting->pixel_app_id }}');
-            fbq('track','PageView');
-        </script>
-        <noscript>
-            <img height="1" width="1" style="display:none"
-                 src="https://www.facebook.com/tr?id={{ $general_setting->pixel_app_id }}&ev=PageView&noscript=1" />
-        </noscript>
+    <script>
+        !function (f, b, e, v, n, t, s) {
+            if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments) };
+            if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = [];
+            t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s)
+        }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '{{ $general_setting->pixel_app_id }}');
+        fbq('track', 'PageView');
+    </script>
+    <noscript>
+        <img height="1" width="1" style="display:none"
+            src="https://www.facebook.com/tr?id={{ $general_setting->pixel_app_id }}&ev=PageView&noscript=1" />
+    </noscript>
     @endif
 </head>
 
 <body class="td_theme_2">
     @if ($general_setting->preloader_status == 'enable')
-        <div id="loading"><div class="loader"></div></div>
+    <div id="loading">
+        <div class="loader"></div>
+    </div>
     @endif
 
     <!-- Header -->
     @include('theme::components.header')
+
+    <!-- Offcanvas side-panel (burger menu) -->
+    @include('components.common_offcanvas')
 
     <!-- Content -->
     @yield('front-content')
@@ -84,26 +90,27 @@
     </button>
 
     @if ($general_setting->tawk_status == 1)
-        <script type="text/javascript">
-            var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-            (function(){
-                var s1=document.createElement("script"), s0=document.getElementsByTagName("script")[0];
-                s1.async=true; s1.src='{{ $general_setting->tawk_chat_link }}';
-                s1.charset='UTF-8'; s1.setAttribute('crossorigin','*');
-                s0.parentNode.insertBefore(s1,s0);
-            })();
-        </script>
+    <script type="text/javascript">
+        var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
+        (function () {
+            var s1 = document.createElement("script"), s0 = document.getElementsByTagName("script")[0];
+            s1.async = true; s1.src = '{{ $general_setting->tawk_chat_link }}';
+            s1.charset = 'UTF-8'; s1.setAttribute('crossorigin', '*');
+            s0.parentNode.insertBefore(s1, s0);
+        })();
+    </script>
     @endif
 
     @if ($general_setting->cookie_consent_status == 1)
-        <div class="common-modal cookie_consent_modal d-none bg-white">
-            <button type="button" class="btn-close cookie_consent_close_btn" aria-label="Close"></button>
-            <h5>{{ __('translate.Cookies') }}</h5>
-            <p>{{ $general_setting->cookie_consent_message }}</p>
-            <a href="javascript:;" class="td_btn td_style_1 td_type_3 td_radius_30 td_medium td_fs_14 report-modal-btn cookie_consent_accept_btn">
-                <span class="td_btn_in td_accent_color"><span>{{ __('translate.Accept') }}</span></span>
-            </a>
-        </div>
+    <div class="common-modal cookie_consent_modal d-none bg-white">
+        <button type="button" class="btn-close cookie_consent_close_btn" aria-label="Close"></button>
+        <h5>{{ __('translate.Cookies') }}</h5>
+        <p>{{ $general_setting->cookie_consent_message }}</p>
+        <a href="javascript:;"
+            class="td_btn td_style_1 td_type_3 td_radius_30 td_medium td_fs_14 report-modal-btn cookie_consent_accept_btn">
+            <span class="td_btn_in td_accent_color"><span>{{ __('translate.Accept') }}</span></span>
+        </a>
+    </div>
     @endif
 
     <!-- Scripts -->
@@ -123,14 +130,14 @@
     <script src="{{ asset('global/toastr/toastr.min.js') }}"></script>
 
     <script>
-        (function($){
+        (function ($) {
             "use strict";
-            $(document).ready(function(){
-                const session_notify_message = @json(Session::get('message'));
-                const demo_mode_message = @json(Session::get('demo_mode'));
+            $(document).ready(function () {
+                const session_notify_message = @json(Session:: get('message'));
+                const demo_mode_message = @json(Session:: get('demo_mode'));
 
                 if (session_notify_message != null) {
-                    const session_notify_type = @json(Session::get('alert-type', 'info'));
+                    const session_notify_type = @json(Session:: get('alert-type', 'info'));
                     switch (session_notify_type) {
                         case 'info': toastr.info(session_notify_message); break;
                         case 'success': toastr.success(session_notify_message); break;
@@ -144,7 +151,7 @@
                     toastr.info("{{ __('translate.Admin can translate every word from the admin panel') }}");
                 }
 
-                const validation_errors = @json($errors->all());
+                const validation_errors = @json($errors -> all());
                 if (validation_errors.length > 0) {
                     validation_errors.forEach(error => toastr.error(error));
                 }
@@ -153,25 +160,25 @@
                     $('.cookie_consent_modal').removeClass('d-none');
                 }
 
-                $('.cookie_consent_close_btn').on('click', function() {
+                $('.cookie_consent_close_btn').on('click', function () {
                     $('.cookie_consent_modal').addClass('d-none');
                 });
 
-                $('.cookie_consent_accept_btn').on('click', function() {
+                $('.cookie_consent_accept_btn').on('click', function () {
                     localStorage.setItem('trips-cookie', '1');
                     $('.cookie_consent_modal').addClass('d-none');
                 });
 
-                $('.before_auth_wishlist').on("click", function() {
+                $('.before_auth_wishlist').on("click", function () {
                     toastr.error("{{ __('translate.Please login first') }}");
                 });
 
-                $(".currency_code").on('change', function() {
+                $(".currency_code").on('change', function () {
                     var currency_code = $(this).val();
                     window.location.href = "{{ route('currency-switcher') }}" + "?currency_code=" + currency_code;
                 });
 
-                $(".language_code").on('change', function() {
+                $(".language_code").on('change', function () {
                     var language_code = $(this).val();
                     window.location.href = "{{ route('language-switcher') }}" + "?lang_code=" + language_code;
                 });
@@ -186,4 +193,5 @@
     <script src="{{ asset('frontend/assets/js/hero-search.js') }}" defer></script>
     @include('theme::components.front_mobile_bottom_bar')
 </body>
+
 </html>

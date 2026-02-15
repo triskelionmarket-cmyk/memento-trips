@@ -44,8 +44,8 @@ class DemoMode
         }
 
         // Block mutating requests in demo mode
-        if (env('APP_MODE') === 'DEMO' && $request->isMethod('post') || $request->isMethod('delete') || $request->isMethod('put') || $request->isMethod('patch')) {
-            if (env('APP_MODE') === 'DEMO') {
+        if (config('app.mode') === 'DEMO' && $request->isMethod('post') || $request->isMethod('delete') || $request->isMethod('put') || $request->isMethod('patch')) {
+            if (config('app.mode') === 'DEMO') {
                 if ($request->ajax()) {
                     return response()->json(['message' => 'This Is Demo Version. You Can Not Change Anything'], 403);
                 }

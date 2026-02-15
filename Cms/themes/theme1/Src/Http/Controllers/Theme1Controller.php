@@ -1,14 +1,14 @@
 <?php
 
 declare(strict_types=1);
-namespace Cms\Themes\Theme1\Src\Http\Controllers;
+namespace Cms\themes\theme1\Src\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Facades\Theme;
 use Modules\Blog\App\Models\Blog;
 
-use Modules\Category\Entities\Category;
+use Modules\Category\App\Models\Category;
 
 class Theme1Controller extends Controller
 {
@@ -154,7 +154,7 @@ class Theme1Controller extends Controller
             'social_links' => getContent('social_links.element'),
             'footer_content' => getContent('footer.content', true),
             'header_content' => getContent('header.content', true),
-            'theme_service' => app('Cms\Themes\Theme1\Src\Services\Theme1Service'),
+            'theme_service' => app(\Cms\themes\theme1\Src\Services\Theme1Service::class),
         ];
     }
 }

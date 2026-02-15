@@ -440,7 +440,7 @@
         }
 
         function manageStatus(id) {
-            var appMODE = "{{ env('APP_MODE') }}"
+            var appMODE = "{{ config('app.mode') }}"
             if (appMODE == 'DEMO') {
                 toastr.error('This Is Demo Version. You Can Not Change Anything');
                 return;

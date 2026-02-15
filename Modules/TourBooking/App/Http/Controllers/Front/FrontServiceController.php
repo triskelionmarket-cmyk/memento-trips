@@ -302,8 +302,8 @@ final class FrontServiceController extends Controller
         // sort …
         $sort = $request->input('sort', 'newest');
         switch ($sort) {
-            case 'price_low': $query->orderBy('discount_price', 'asc'); break;
-            case 'price_high': $query->orderBy('discount_price', 'desc'); break;
+            case 'price_low': $query->orderByRaw('COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(age_categories, \'$.adult.price\')) AS DECIMAL(10,2)), price_per_person, 0) ASC'); break;
+            case 'price_high': $query->orderByRaw('COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(age_categories, \'$.adult.price\')) AS DECIMAL(10,2)), price_per_person, 0) DESC'); break;
             case 'rating':
                 $query->withAvg('reviews', 'rating')->orderByDesc('reviews_avg_rating'); break;
             case 'oldest': $query->oldest(); break;
@@ -344,21 +344,10 @@ final class FrontServiceController extends Controller
 
     public function allServices(Request $request)
     {
-        $selected_service_layout = GlobalSetting::where('key', 'booking_service_theme')?->first()?->value;
         $breadcrumb_title = trans('translate.All Services');
-        $requestView = $request->view;
 
-        if ($requestView == 'hotel_grid' || $selected_service_layout == 'hotel_grid') {
-            $serviceView = 'tourbooking::front.services.services';
-        } elseif ($requestView == 'tour_grid_one' || $selected_service_layout == 'tour_grid_one') {
-            $serviceView = 'tourbooking::front.services.services2';
-        } elseif ($requestView == 'tour_grid_two' || $selected_service_layout == 'tour_grid_two') {
-            $serviceView = 'tourbooking::front.services.services3';
-        } elseif ($requestView == 'hotel_listing' || $selected_service_layout == 'hotel_listing') {
-            $serviceView = 'tourbooking::front.services.services4';
-        } else {
-            $serviceView = 'tourbooking::front.services.services';
-        }
+        // All layouts now use the unified services2 template
+        $serviceView = 'tourbooking::front.services.services2';
 
         $serviceTypes = $this->serviceTypeRepository->getActiveNameId();
 
@@ -438,8 +427,8 @@ final class FrontServiceController extends Controller
             })
             ->when($request->filled('sort_by'), function ($query) use ($request) {
                 switch ($request->sort_by) {
-                    case 'price_low':  $query->orderBy('price_per_person', 'asc'); break;
-                    case 'price_high': $query->orderBy('price_per_person', 'desc'); break;
+                    case 'price_low':  $query->orderByRaw('COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(age_categories, \'$.adult.price\')) AS DECIMAL(10,2)), price_per_person, 0) ASC'); break;
+                    case 'price_high': $query->orderByRaw('COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(age_categories, \'$.adult.price\')) AS DECIMAL(10,2)), price_per_person, 0) DESC'); break;
                     case 'trending':   $query->orderBy('is_featured', 'desc'); break;
                     case 'popular':    $query->orderBy('is_popular', 'desc'); break;
                     case 'latest':     $query->orderBy('created_at', 'desc'); break;

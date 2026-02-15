@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Intervention\Image\Facades\Image;
+use Intervention\Image\Laravel\Facades\Image;
 
 // ── Application Dependencies ────────────────────────────────────────────────
 use App\Http\Controllers\Controller;
@@ -83,7 +83,7 @@ class ProfileController extends Controller
             $image_name = Str::slug($request->name) . date('-Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $extention;
             $image_name = 'uploads/website-images/' . $image_name;
 
-            Image::make($request->image)->save(public_path($image_name));
+            Image::read($request->image)->save(public_path($image_name));
 
             $admin->image = $image_name;
             $admin->save();

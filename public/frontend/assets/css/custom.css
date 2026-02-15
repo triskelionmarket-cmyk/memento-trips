@@ -401,12 +401,16 @@ ul.trips-tabs-menu li {
 }
 
 .payment_right .payment_select_item_thumb {
-    height: 28px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .payment_right .payment_select_item_thumb img {
-    width: 100%;
+    width: auto;
     height: 100%;
+    object-fit: contain;
 }
 
 .payment_right .payment_select_modal_head {

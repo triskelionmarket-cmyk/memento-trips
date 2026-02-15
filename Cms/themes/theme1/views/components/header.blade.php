@@ -55,6 +55,86 @@
                             @endguest
                         </div>
 
+                        {{-- Combined Language & Currency Dropdown --}}
+                        @php
+                        $__languages = \Modules\Language\App\Models\Language::where('status', 1)->get();
+                        $__currencies = \Modules\Currency\App\Models\Currency::where('status', 'active')->get();
+                        $__currentLang = session('front_lang', 'en');
+                        $__currentLangName = session('front_lang_name', 'English');
+                        $__currentCurrIcon = session('currency_icon', '€');
+                        $__currentCurrCode = session('currency_code', 'EUR');
+                        $__flagMap = ['en' => '🇬🇧', 'pl' => '🇵🇱', 'ro' => '🇷🇴', 'de' => '🇩🇪', 'fr' => '🇫🇷',
+                        'es' => '🇪🇸', 'it' => '🇮🇹'];
+                        $__currentFlag = $__flagMap[$__currentLang] ?? '🌐';
+                        @endphp
+                        <div class="lc-dropdown-wrap d-none d-xl-block ml-20" style="position:relative;">
+                            <button type="button" class="lc-dropdown-toggle" id="lcDropdownBtn"
+                                style="background:none;border:1px solid rgba(255,255,255,.4);border-radius:8px;padding:6px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:14px;color:#fff;transition:all .2s;">
+                                <span style="font-size:16px;">{{ $__currentFlag }}</span>
+                                <span style="font-weight:500;">{{ $__currentCurrIcon }}</span>
+                                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style="margin-left:2px;">
+                                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </button>
+                            <div class="lc-dropdown-menu" id="lcDropdownMenu"
+                                style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.12);min-width:220px;z-index:9999;overflow:hidden;">
+                                {{-- Language Section --}}
+                                <div style="padding:14px 16px 8px;">
+                                    <div
+                                        style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:8px;">
+                                        🌐 {{ __('translate.Language') }}
+                                    </div>
+                                    @foreach($__languages as $lang)
+                                    <a href="{{ route('language-switcher', ['lang_code' => $lang->lang_code]) }}"
+                                        style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;text-decoration:none;color:#333;font-size:14px;transition:background .15s;{{ $__currentLang === $lang->lang_code ? 'background:#f0f7ff;font-weight:600;color:#e86532;' : '' }}"
+                                        onmouseover="this.style.background='#f5f5f5'"
+                                        onmouseout="this.style.background='{{ $__currentLang === $lang->lang_code ? '#f0f7ff' : 'transparent' }}'">
+                                        <span style="font-size:18px;">{{ $__flagMap[$lang->lang_code] ?? '🌐' }}</span>
+                                        <span>{{ $lang->lang_name }}</span>
+                                        @if($__currentLang === $lang->lang_code)
+                                        <span style="margin-left:auto;color:#e86532;">✓</span>
+                                        @endif
+                                    </a>
+                                    @endforeach
+                                </div>
+                                {{-- Divider --}}
+                                <div style="height:1px;background:#eee;margin:4px 16px;"></div>
+                                {{-- Currency Section --}}
+                                <div style="padding:8px 16px 14px;">
+                                    <div
+                                        style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:8px;">
+                                        💱 {{ __('translate.Currency') }}
+                                    </div>
+                                    @foreach($__currencies as $curr)
+                                    <a href="{{ route('currency-switcher', ['currency_code' => $curr->currency_code]) }}"
+                                        style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;text-decoration:none;color:#333;font-size:14px;transition:background .15s;{{ $__currentCurrCode === $curr->currency_code ? 'background:#f0f7ff;font-weight:600;color:#e86532;' : '' }}"
+                                        onmouseover="this.style.background='#f5f5f5'"
+                                        onmouseout="this.style.background='{{ $__currentCurrCode === $curr->currency_code ? '#f0f7ff' : 'transparent' }}'">
+                                        <span style="font-size:16px;font-weight:700;width:24px;text-align:center;">{{
+                                            $curr->currency_icon }}</span>
+                                        <span>{{ $curr->currency_name }}</span>
+                                        @if($__currentCurrCode === $curr->currency_code)
+                                        <span style="margin-left:auto;color:#e86532;">✓</span>
+                                        @endif
+                                    </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                        <script>
+                            (function () {
+                                const btn = document.getElementById('lcDropdownBtn');
+                                const menu = document.getElementById('lcDropdownMenu');
+                                if (!btn || !menu) return;
+                                btn.addEventListener('click', function (e) {
+                                    e.stopPropagation();
+                                    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+                                });
+                                document.addEventListener('click', function () { menu.style.display = 'none'; });
+                                menu.addEventListener('click', function (e) { e.stopPropagation(); });
+                            })();
+                        </script>
 
                         <div class="tg-header-menu-bar lh-1 p-relative ml-20 pl-20">
                             <span class="tg-header-border d-none d-xl-block"></span>

@@ -11,8 +11,8 @@ use Modules\FAQ\App\Models\FaqTranslation;
 use Modules\Page\App\Models\PrivacyPolicy;
 use Modules\Blog\App\Models\BlogTranslation;
 use Modules\Page\App\Models\TermAndCondition;
-use Modules\Page\App\Models\FooterTranslation;  
-use Modules\Category\Entities\CategoryTranslation;
+use Modules\Page\App\Models\FooterTranslation;
+use Modules\Category\App\Models\CategoryTranslation;
 use Modules\Page\App\Models\CustomPageTranslation;
 use Modules\FAQ\App\Http\Controllers\FAQController;
 use Modules\Blog\App\Models\BlogCategoryTranslation;
@@ -62,7 +62,7 @@ class LanguageController extends Controller
      */
     public function store(LanguageRequest $request)
     {
-        if($request->is_default){
+        if ($request->is_default) {
             DB::table('languages')->update(['is_default' => 'No']);
         }
 
@@ -110,12 +110,12 @@ class LanguageController extends Controller
 
         /** generate local language */
 
-        $path = base_path().'/lang'.'/'.$request->lang_code;
+        $path = base_path() . '/lang' . '/' . $request->lang_code;
 
-        if (! File::exists($path)) {
+        if (!File::exists($path)) {
             File::makeDirectory($path);
 
-            $sourcePath = base_path().'/lang/en';
+            $sourcePath = base_path() . '/lang/en';
             $destinationPath = $path;
 
             // Get all files from the source folder
@@ -155,11 +155,11 @@ class LanguageController extends Controller
 
         $language = Language::findOrFail($id);
 
-        if($request->is_default){
+        if ($request->is_default) {
             DB::table('languages')->update(['is_default' => 'No']);
         }
 
-        if($language->is_default == 'Yes'){
+        if ($language->is_default == 'Yes') {
             DB::table('languages')->where('id', 1)->update(['is_default' => 'Yes']);
         }
 
@@ -182,7 +182,7 @@ class LanguageController extends Controller
     {
 
 
-        if($id == 1){
+        if ($id == 1) {
             $notify_message = trans('translate.You can not delete english language');
             $notify_message = array('message' => $notify_message, 'alert-type' => 'error');
             return redirect()->route('admin.language.index')->with($notify_message);
@@ -208,18 +208,18 @@ class LanguageController extends Controller
             }
         }
 
-        BlogCategoryTranslation::where('lang_code' , $language->lang_code)->delete();
-        BlogTranslation::where('lang_code' , $language->lang_code)->delete();
-        FaqTranslation::where('lang_code' , $language->lang_code)->delete();
-        PrivacyPolicy::where('lang_code' , $language->lang_code)->delete();
-        TermAndCondition::where('lang_code' , $language->lang_code)->delete();
-        TestimonialTrasnlation::where('lang_code' , $language->lang_code)->delete();
-        CategoryTranslation::where('lang_code' , $language->lang_code)->delete();
-        FooterTranslation::where('lang_code' , $language->lang_code)->delete();
-        CustomPageTranslation::where('lang_code' , $language->lang_code)->delete();
-        CourseLevelTranslation::where('lang_code' , $language->lang_code)->delete();
+        BlogCategoryTranslation::where('lang_code', $language->lang_code)->delete();
+        BlogTranslation::where('lang_code', $language->lang_code)->delete();
+        FaqTranslation::where('lang_code', $language->lang_code)->delete();
+        PrivacyPolicy::where('lang_code', $language->lang_code)->delete();
+        TermAndCondition::where('lang_code', $language->lang_code)->delete();
+        TestimonialTrasnlation::where('lang_code', $language->lang_code)->delete();
+        CategoryTranslation::where('lang_code', $language->lang_code)->delete();
+        FooterTranslation::where('lang_code', $language->lang_code)->delete();
+        CustomPageTranslation::where('lang_code', $language->lang_code)->delete();
+        CourseLevelTranslation::where('lang_code', $language->lang_code)->delete();
 
-        $path = base_path().'/lang'.'/'.$language->lang_code;
+        $path = base_path() . '/lang' . '/' . $language->lang_code;
 
         if (File::exists($path)) {
             File::deleteDirectory($path);
@@ -230,10 +230,11 @@ class LanguageController extends Controller
         return redirect()->route('admin.language.index')->with($notify_message);
     }
 
-    public function theme_language(Request $request){
-        $langPath = base_path('lang/'.$request->lang_code.'/translate.php');
+    public function theme_language(Request $request)
+    {
+        $langPath = base_path('lang/' . $request->lang_code . '/translate.php');
 
-        if(!File::exists($langPath)){
+        if (!File::exists($langPath)) {
             $notify_message = trans('translate.Requested language does not exist');
             $notify_message = array('message' => $notify_message, 'alert-type' => 'error');
             return redirect()->route('admin.language.index')->with($notify_message);
@@ -249,10 +250,11 @@ class LanguageController extends Controller
     }
 
 
-    public function update_theme_language (Request $request){
-        $langPath = base_path('lang/'.$request->lang_code.'/translate.php');
+    public function update_theme_language(Request $request)
+    {
+        $langPath = base_path('lang/' . $request->lang_code . '/translate.php');
 
-        if(!File::exists($langPath)){
+        if (!File::exists($langPath)) {
             $notify_message = trans('translate.Requested language does not exist');
             $notify_message = array('message' => $notify_message, 'alert-type' => 'error');
             return redirect()->route('admin.language.index')->with($notify_message);
@@ -260,14 +262,14 @@ class LanguageController extends Controller
 
         // Get existing translations to preserve them
         $existingTranslations = [];
-        if(File::exists($langPath)) {
+        if (File::exists($langPath)) {
             $existingTranslations = include($langPath);
         }
-        
+
         // Merge existing translations with updated ones
         // Only update the submitted keys, preserve all others
         $dataArray = $existingTranslations;
-        foreach($request->values as $index => $value){
+        foreach ($request->values as $index => $value) {
             $dataArray[$index] = $value;
         }
 
@@ -277,7 +279,7 @@ class LanguageController extends Controller
             if ($handle) {
                 // Write the PHP opening tag and array opening
                 fwrite($handle, "<?php\n return array (\n");
-                
+
                 // Write each key-value pair
                 foreach ($dataArray as $key => $value) {
                     // Properly escape the key and value for PHP
@@ -285,22 +287,24 @@ class LanguageController extends Controller
                     $escapedValue = addslashes($value);
                     fwrite($handle, "  '{$escapedKey}' => '{$escapedValue}',\n");
                 }
-                
+
                 // Close the array and PHP tag
                 fwrite($handle, ");\n");
                 fclose($handle);
-                
+
                 $notify_message = trans('translate.Updated successfully');
                 $notify_message = array('message' => $notify_message, 'alert-type' => 'success');
-            } else {
+            }
+            else {
                 // Failed to open file
                 $notify_message = trans('translate.Failed to update translations');
                 $notify_message = array('message' => $notify_message, 'alert-type' => 'error');
             }
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             // Log the error
             \Log::error('Translation update error: ' . $e->getMessage());
-            
+
             $notify_message = trans('translate.Failed to update translations') . ' - ' . $e->getMessage();
             $notify_message = array('message' => $notify_message, 'alert-type' => 'error');
         }

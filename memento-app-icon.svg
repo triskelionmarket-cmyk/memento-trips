@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- ========== BACKGROUND ========== -->
+    <linearGradient id="bgGradient" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#c23200"/>
+      <stop offset="35%" stop-color="#e03d00"/>
+      <stop offset="65%" stop-color="#fa4200"/>
+      <stop offset="100%" stop-color="#ff5f22"/>
+    </linearGradient>
+
+    <!-- ========== LIQUID GLASS (linear gradients only, no circles) ========== -->
+    <!-- Glass base: subtle white overlay with edge brightness -->
+    <linearGradient id="glassBase" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="white" stop-opacity="0.2"/>
+      <stop offset="30%" stop-color="white" stop-opacity="0.06"/>
+      <stop offset="70%" stop-color="white" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0.1"/>
+    </linearGradient>
+
+    <!-- Glass top highlight (main specular reflection) -->
+    <linearGradient id="glassTopHighlight" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="white" stop-opacity="0.45"/>
+      <stop offset="15%" stop-color="white" stop-opacity="0.2"/>
+      <stop offset="35%" stop-color="white" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Glass left-to-right sheen -->
+    <linearGradient id="glassSideSheen" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="white" stop-opacity="0.08"/>
+      <stop offset="20%" stop-color="white" stop-opacity="0.02"/>
+      <stop offset="80%" stop-color="white" stop-opacity="0.01"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0.06"/>
+    </linearGradient>
+
+    <!-- Glass bottom reflection -->
+    <linearGradient id="glassBottom" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="white" stop-opacity="0"/>
+      <stop offset="88%" stop-color="white" stop-opacity="0.02"/>
+      <stop offset="97%" stop-color="white" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0.04"/>
+    </linearGradient>
+
+    <!-- ========== FILTERS ========== -->
+    <filter id="specularBlur" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6"/>
+    </filter>
+
+    <!-- ========== CLIP PATHS ========== -->
+    <!-- iOS rounded rectangle -->
+    <clipPath id="iconClip">
+      <rect x="0" y="0" width="1024" height="1024" rx="224" ry="224"/>
+    </clipPath>
+  </defs>
+
+  <!-- ========== ICON ========== -->
+  <g clip-path="url(#iconClip)">
+
+    <!-- Background gradient -->
+    <rect width="1024" height="1024" fill="url(#bgGradient)"/>
+
+    <!-- Glass base layer -->
+    <rect width="1024" height="1024" fill="url(#glassBase)"/>
+
+    <!-- Glass side sheen -->
+    <rect width="1024" height="1024" fill="url(#glassSideSheen)"/>
+
+    <!-- Glass inner border -->
+    <rect x="8" y="8" width="1008" height="1008" rx="218" ry="218"
+          fill="none" stroke="white" stroke-width="1.5" opacity="0.25"/>
+
+    <!-- Logo - large, centered -->
+    <image x="62" y="62" width="900" height="900"
+           href="logo square memento.svg"
+           xlink:href="logo square memento.svg"
+           preserveAspectRatio="xMidYMid meet"/>
+
+    <!-- Top specular reflection -->
+    <rect width="1024" height="1024" fill="url(#glassTopHighlight)" opacity="0.7"/>
+
+    <!-- Specular bright spot -->
+    <ellipse cx="400" cy="180" rx="220" ry="80"
+             fill="white" opacity="0.1" filter="url(#specularBlur)"/>
+
+    <!-- Tiny intense specular point -->
+    <ellipse cx="420" cy="190" rx="50" ry="22"
+             fill="white" opacity="0.18" filter="url(#specularBlur)"/>
+
+    <!-- Bottom reflection -->
+    <rect width="1024" height="1024" fill="url(#glassBottom)" opacity="0.6"/>
+
+  </g>
+</svg>

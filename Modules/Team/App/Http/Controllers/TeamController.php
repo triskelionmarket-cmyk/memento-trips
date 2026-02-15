@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
-use Intervention\Image\Facades\Image;
+use Intervention\Image\Laravel\Facades\Image;
 use Modules\Language\App\Models\Language;
 use Modules\Team\App\Models\Team;
 use Modules\Team\App\Models\TeamTranslation;
@@ -38,34 +38,34 @@ class TeamController extends Controller
     public function store(Request $request)
     {
         $request->validate(
-            [
-                'name' => 'required|string',
-                'slug' => 'required|string|unique:teams,slug',
-                'image' => 'required|image',
-                'image_detail' => 'nullable|image',
-                'description' => 'required|string',
-                'designation' => 'required|string',
-                'mail' => 'required|email',
-                'phone_number' => 'required|string',
-                'facebook' => 'nullable|string|url',
-                'twitter' => 'nullable|string|url',
-                'linkedin' => 'nullable|string|url',
-                'instagram' => 'nullable|string|url',
-                'skill_title.*' => 'nullable|string|max:255',
-                'skill_percentage.*' => 'nullable|numeric|min:0|max:100',
-            ],
-            [
-                'name.required' => trans('translate.Name is required'),
-                'slug.required' => trans('translate.Slug is required'),
-                'description.required' => trans('translate.Description is required'),
-                'designation.required' => trans('translate.Designation is required'),
-                'mail.required' => trans('translate.Mail is required'),
-                'phone_number.required' => trans('translate.Phone Number is required'),
-                'skill_title.*.required' => trans('translate.Skill Title is required'),
-                'skill_percentage.*.required' => trans('translate.Skill Percentage is required'),
-                'skill_percentage.*.min' => trans('translate.Skill Percentage must be less than or equal to 100'),
-                'skill_percentage.*.max' => trans('translate.Skill Percentage must be less than or equal to 100'),
-            ]
+        [
+            'name' => 'required|string',
+            'slug' => 'required|string|unique:teams,slug',
+            'image' => 'required|image',
+            'image_detail' => 'nullable|image',
+            'description' => 'required|string',
+            'designation' => 'required|string',
+            'mail' => 'required|email',
+            'phone_number' => 'required|string',
+            'facebook' => 'nullable|string|url',
+            'twitter' => 'nullable|string|url',
+            'linkedin' => 'nullable|string|url',
+            'instagram' => 'nullable|string|url',
+            'skill_title.*' => 'nullable|string|max:255',
+            'skill_percentage.*' => 'nullable|numeric|min:0|max:100',
+        ],
+        [
+            'name.required' => trans('translate.Name is required'),
+            'slug.required' => trans('translate.Slug is required'),
+            'description.required' => trans('translate.Description is required'),
+            'designation.required' => trans('translate.Designation is required'),
+            'mail.required' => trans('translate.Mail is required'),
+            'phone_number.required' => trans('translate.Phone Number is required'),
+            'skill_title.*.required' => trans('translate.Skill Title is required'),
+            'skill_percentage.*.required' => trans('translate.Skill Percentage is required'),
+            'skill_percentage.*.min' => trans('translate.Skill Percentage must be less than or equal to 100'),
+            'skill_percentage.*.max' => trans('translate.Skill Percentage must be less than or equal to 100'),
+        ]
         );
 
         $team = new Team();
@@ -73,8 +73,8 @@ class TeamController extends Controller
         if ($request->image) {
             $image_name = 'team' . date('-Y-m-d-h-i-s-') . rand(999, 9999) . '.webp';
             $image_name = 'uploads/custom-images/' . $image_name;
-            Image::make($request->image)
-                ->encode('webp', 80)
+            Image::read($request->image)
+                ->toWebp(80)
                 ->save(public_path() . '/' . $image_name);
             $team->image = $image_name;
         }
@@ -82,8 +82,8 @@ class TeamController extends Controller
         if ($request->image_detail) {
             $image_name = 'team' . date('-Y-m-d-h-i-s-') . rand(999, 9999) . '.webp';
             $image_name = 'uploads/custom-images/' . $image_name;
-            Image::make($request->image_detail)
-                ->encode('webp', 80)
+            Image::read($request->image_detail)
+                ->toWebp(80)
                 ->save(public_path() . '/' . $image_name);
             $team->image_details = $image_name;
         }
@@ -148,47 +148,48 @@ class TeamController extends Controller
         if ($request->lang_code == admin_lang()) {
 
             $request->validate(
-                [
-                    'image' => 'nullable|image',
-                    'name' => 'required|string',
-                    'slug' => 'required|string|unique:teams,slug,' . $id,
-                    'description' => 'required|string',
-                    'designation' => 'required|string',
-                    'mail' => 'required|email',
-                    'phone_number' => 'required|string',
-                    'facebook' => 'nullable|string|url',
-                    'twitter' => 'nullable|string|url',
-                    'linkedin' => 'nullable|string|url',
-                    'instagram' => 'nullable|string|url',
-                    'skill_title.*' => 'nullable|string|max:255',
-                    'skill_percentage.*' => 'nullable|numeric|min:0|max:100',
-                ],
-                [
-                    'name.required' => trans('translate.Name is required'),
-                    'slug.required' => trans('translate.Slug is required'),
-                    'description.required' => trans('translate.Description is required'),
-                    'designation.required' => trans('translate.Designation is required'),
-                    'mail.required' => trans('translate.Mail is required'),
-                    'phone_number.required' => trans('translate.Phone Number is required'),
-                    'skill_title.*.required' => trans('translate.Skill Title is required'),
-                    'skill_percentage.*.required' => trans('translate.Skill Percentage is required'),
-                    'skill_percentage.*.min' => trans('translate.Skill Percentage must be less than or equal to 100'),
-                    'skill_percentage.*.max' => trans('translate.Skill Percentage must be less than or equal to 100'),
-                ]
+            [
+                'image' => 'nullable|image',
+                'name' => 'required|string',
+                'slug' => 'required|string|unique:teams,slug,' . $id,
+                'description' => 'required|string',
+                'designation' => 'required|string',
+                'mail' => 'required|email',
+                'phone_number' => 'required|string',
+                'facebook' => 'nullable|string|url',
+                'twitter' => 'nullable|string|url',
+                'linkedin' => 'nullable|string|url',
+                'instagram' => 'nullable|string|url',
+                'skill_title.*' => 'nullable|string|max:255',
+                'skill_percentage.*' => 'nullable|numeric|min:0|max:100',
+            ],
+            [
+                'name.required' => trans('translate.Name is required'),
+                'slug.required' => trans('translate.Slug is required'),
+                'description.required' => trans('translate.Description is required'),
+                'designation.required' => trans('translate.Designation is required'),
+                'mail.required' => trans('translate.Mail is required'),
+                'phone_number.required' => trans('translate.Phone Number is required'),
+                'skill_title.*.required' => trans('translate.Skill Title is required'),
+                'skill_percentage.*.required' => trans('translate.Skill Percentage is required'),
+                'skill_percentage.*.min' => trans('translate.Skill Percentage must be less than or equal to 100'),
+                'skill_percentage.*.max' => trans('translate.Skill Percentage must be less than or equal to 100'),
+            ]
             );
 
             if ($request->image) {
                 $old_image = $team->image;
                 $image_name = 'team' . date('-Y-m-d-h-i-s-') . rand(999, 9999) . '.webp';
                 $image_name = 'uploads/custom-images/' . $image_name;
-                Image::make($request->image)
-                    ->encode('webp', 80)
+                Image::read($request->image)
+                    ->toWebp(80)
                     ->save(public_path() . '/' . $image_name);
                 $team->image = $image_name;
                 $team->save();
 
                 if ($old_image) {
-                    if (File::exists(public_path() . '/' . $old_image)) unlink(public_path() . '/' . $old_image);
+                    if (File::exists(public_path() . '/' . $old_image))
+                        unlink(public_path() . '/' . $old_image);
                 }
             }
 
@@ -196,14 +197,15 @@ class TeamController extends Controller
                 $old_image = $team->image_details;
                 $image_name = 'team' . date('-Y-m-d-h-i-s-') . rand(999, 9999) . '.webp';
                 $image_name = 'uploads/custom-images/' . $image_name;
-                Image::make($request->image_detail)
-                    ->encode('webp', 80)
+                Image::read($request->image_detail)
+                    ->toWebp(80)
                     ->save(public_path() . '/' . $image_name);
                 $team->image_details = $image_name;
                 $team->save();
 
                 if ($old_image) {
-                    if (File::exists(public_path() . '/' . $old_image)) unlink(public_path() . '/' . $old_image);
+                    if (File::exists(public_path() . '/' . $old_image))
+                        unlink(public_path() . '/' . $old_image);
                 }
             }
 
@@ -256,17 +258,19 @@ class TeamController extends Controller
         $old_image2 = $team->image_details;
 
         if ($old_image) {
-            if (File::exists(public_path() . '/' . $old_image)) unlink(public_path() . '/' . $old_image);
+            if (File::exists(public_path() . '/' . $old_image))
+                unlink(public_path() . '/' . $old_image);
         }
 
         if ($old_image2) {
-            if (File::exists(public_path() . '/' . $old_image2)) unlink(public_path() . '/' . $old_image2);
+            if (File::exists(public_path() . '/' . $old_image2))
+                unlink(public_path() . '/' . $old_image2);
         }
 
         TeamTranslation::where('team_id', $id)->delete();
         $team->delete();
 
-        $notify_message =  trans('translate.Delete Successfully');
+        $notify_message = trans('translate.Delete Successfully');
         $notify_message = array('message' => $notify_message, 'alert-type' => 'success');
         return redirect()->route('admin.team.index')->with($notify_message);
     }

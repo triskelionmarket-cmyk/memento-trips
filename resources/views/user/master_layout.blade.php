@@ -654,6 +654,66 @@
                   <path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"></path>
                 </svg>
               </a>
+              <span class="pt-sep-v"></span>
+              {{-- Language & Currency Dropdown --}}
+              @php
+              $__languages = \Modules\Language\App\Models\Language::where('status', 1)->get();
+              $__currencies = \Modules\Currency\App\Models\Currency::where('status', 'active')->get();
+              $__currentLang = session('front_lang', 'en');
+              $__currentCurrIcon = session('currency_icon', '€');
+              $__currentCurrCode = session('currency_code', 'EUR');
+              $__flagMap = ['en' => '🇬🇧', 'pl' => '🇵🇱', 'ro' => '🇷🇴', 'de' => '🇩🇪', 'fr' => '🇫🇷', 'es' =>
+              '🇪🇸', 'it' => '🇮🇹'];
+              $__currentFlag = $__flagMap[$__currentLang] ?? '🌐';
+              @endphp
+              <div style="position:relative;">
+                <button type="button" class="pt-ctl" id="lcDropdownBtn" title="Language & Currency"
+                  style="width:auto;padding:0 10px;gap:4px;display:inline-flex;font-size:13px;font-weight:600;color:var(--pt-ink);">
+                  <span style="font-size:15px;">{{ $__currentFlag }}</span>
+                  <span>{{ $__currentCurrIcon }}</span>
+                  <svg width="8" height="5" viewBox="0 0 10 6" fill="none" style="margin-left:1px;">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                </button>
+                <div id="lcDropdownMenu"
+                  style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.12);min-width:220px;z-index:9999;overflow:hidden;">
+                  <div style="padding:14px 16px 8px;">
+                    <div
+                      style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:8px;">
+                      🌐 {{ __('translate.Language') }}</div>
+                    @foreach($__languages as $lang)
+                    <a href="{{ route('language-switcher', ['lang_code' => $lang->lang_code]) }}"
+                      style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;text-decoration:none;color:#333;font-size:14px;transition:background .15s;{{ $__currentLang === $lang->lang_code ? 'background:#f0f7ff;font-weight:600;color:#e86532;' : '' }}"
+                      onmouseover="this.style.background='#f5f5f5'"
+                      onmouseout="this.style.background='{{ $__currentLang === $lang->lang_code ? '#f0f7ff' : 'transparent' }}'">
+                      <span style="font-size:18px;">{{ $__flagMap[$lang->lang_code] ?? '🌐' }}</span>
+                      <span>{{ $lang->lang_name }}</span>
+                      @if($__currentLang === $lang->lang_code)<span
+                        style="margin-left:auto;color:#e86532;">✓</span>@endif
+                    </a>
+                    @endforeach
+                  </div>
+                  <div style="height:1px;background:#eee;margin:4px 16px;"></div>
+                  <div style="padding:8px 16px 14px;">
+                    <div
+                      style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:8px;">
+                      💱 {{ __('translate.Currency') }}</div>
+                    @foreach($__currencies as $curr)
+                    <a href="{{ route('currency-switcher', ['currency_code' => $curr->currency_code]) }}"
+                      style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;text-decoration:none;color:#333;font-size:14px;transition:background .15s;{{ $__currentCurrCode === $curr->currency_code ? 'background:#f0f7ff;font-weight:600;color:#e86532;' : '' }}"
+                      onmouseover="this.style.background='#f5f5f5'"
+                      onmouseout="this.style.background='{{ $__currentCurrCode === $curr->currency_code ? '#f0f7ff' : 'transparent' }}'">
+                      <span style="font-size:16px;font-weight:700;width:24px;text-align:center;">{{ $curr->currency_icon
+                        }}</span>
+                      <span>{{ $curr->currency_name }}</span>
+                      @if($__currentCurrCode === $curr->currency_code)<span
+                        style="margin-left:auto;color:#e86532;">✓</span>@endif
+                    </a>
+                    @endforeach
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="pt-account">
@@ -774,7 +834,7 @@
 
         if ($('#dataTable').length) {
           if (!$.fn.DataTable.isDataTable('#dataTable')) {
-            $('#dataTable').DataTable();
+            $('#dataTable').DataTable({ order: [] });
           }
         }
 
@@ -823,6 +883,16 @@
     })();
   </script>
 
+
+  <script>
+    (function () {
+      var b = document.getElementById('lcDropdownBtn'), m = document.getElementById('lcDropdownMenu');
+      if (!b || !m) return;
+      b.addEventListener('click', function (e) { e.stopPropagation(); m.style.display = m.style.display === 'none' ? 'block' : 'none'; });
+      document.addEventListener('click', function () { m.style.display = 'none'; });
+      m.addEventListener('click', function (e) { e.stopPropagation(); });
+    })();
+  </script>
   @stack('js_section')
 </body>
 

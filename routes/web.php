@@ -133,7 +133,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'MaintenanceMode']], function
 
 
 
-Route::group(['as' => 'admin.', 'prefix' => 'admin'], function () {
+Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['DesktopOnly']], function () {
 
     Route::get('login', [LoginController::class , 'custom_login_page'])->name('login');
     Route::post('store-login', [LoginController::class , 'store_login'])->name('store-login');

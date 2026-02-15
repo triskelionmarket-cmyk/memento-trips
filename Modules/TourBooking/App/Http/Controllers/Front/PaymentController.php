@@ -168,7 +168,7 @@ private function captureAgencyContextFromRequest(Request $request): void
                 "amount"      => (int) round($payable_amount * 100),
                 "currency"    => $stripe_currency->currency_code ?? 'USD',
                 "source"      => $request->stripeToken,
-                "description" => env('APP_NAME'),
+                "description" => config('app.name'),
             ]);
         } catch (Exception $ex) {
             Log::info('Stripe payment : ' . $ex->getMessage());
@@ -178,215 +178,283 @@ private function captureAgencyContextFromRequest(Request $request): void
             ]);
         }
 
-        $this->create_order($auth_user, 'Stripe', 'success', $result->balance_transaction, $customerInfo);
+        $order = $this->create_order($auth_user, 'Stripe', 'success', $result->balance_transaction, $customerInfo);
 
-        return redirect()->route('user.bookings.index')->with([
-            'message' => trans('translate.Your payment has been made successful. Thanks for your new purchase'),
-            'alert-type' => 'success'
-        ]);
+        return $this->successRedirect($order);
     }
 
     /* =======================
-     * PAYU ROMANIA (REAL)
-     * ======================= */
+     * PAYU ROMANIA – REBUILT
+     * =======================
+     *
+     * Flow:
+     *   1. Checkout JS sends AJAX POST → payu_payment()
+     *   2. Controller gets OAuth2 token → creates order at PayU REST API
+     *   3. Returns JSON { redirect_url } to the browser
+     *   4. User completes payment on PayU page
+     *   5. PayU redirects to continueUrl → payu_callback()
+     *   6. Callback verifies order status via API and creates internal booking
+     *
+     * Fixed: AJAX JSON response, currency from DB, orderId tracking,
+     *        consistent OAuth, sandbox/production toggle.
+     */
+
+    /**
+     * Get the PayU API base URL based on sandbox setting.
+     */
+    private function payuApiBase(): string
+    {
+        $sandbox = (int) ($this->payment_setting->payu_sandbox ?? 1);
+        return $sandbox
+            ? 'https://secure.snd.payu.com'   // sandbox
+            : 'https://secure.payu.com';       // production
+    }
+
+    /**
+     * Obtain an OAuth2 Bearer token from PayU.
+     */
+    private function payuGetToken(): ?string
+    {
+        $apiBase   = $this->payuApiBase();
+        $clientId  = $this->payment_setting->payu_client_id     ?? '';
+        $secret    = $this->payment_setting->payu_client_secret ?? '';
+
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL            => "{$apiBase}/pl/standard/user/oauth/authorize",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => http_build_query([
+                'grant_type'    => 'client_credentials',
+                'client_id'     => $clientId,
+                'client_secret' => $secret,
+            ]),
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
+            CURLOPT_TIMEOUT        => 15,
+        ]);
+        $raw = curl_exec($ch);
+        $err = curl_error($ch);
+        curl_close($ch);
+
+        if ($err) {
+            Log::error('PayU OAuth cURL error', ['error' => $err]);
+            return null;
+        }
+
+        $data = json_decode($raw, true);
+        Log::info('PayU OAuth response', ['response' => $data]);
+
+        return $data['access_token'] ?? null;
+    }
+
+    /**
+     * Step 1 – AJAX POST from checkout.
+     * Creates a PayU order and returns JSON { redirect_url }.
+     */
     public function payu_payment(Request $request)
     {
-        Log::info('=== PAYU PAYMENT START ===', ['request' => $request->all()]);
+        Log::info('=== PAYU PAYMENT START ===', $request->all());
 
         try {
-            $customerInfo = $this->customerInfo($request);
+            // ── context ─────────────────────────────────────
+            $auth_user   = Auth::guard('web')->user();
+            $this->setAgencyBookingContextFromRequest($request, $auth_user);
+
+            $customerInfo    = $this->customerInfo($request);
             $calculate_price = $this->calculate_price();
-            $auth_user = Auth::guard('web')->user();
+            $totalAmount     = (float) ($calculate_price['total_amount'] ?? 0);
 
-            // Conversie EUR → RON (afisat clientului in EUR)
-            $exchangeRate = 4.97;
-            $displayCurrency = 'EUR';
-            $payuCurrency = 'RON';
+            // ── currency conversion ─────────────────────────
+            $payu_currency = Currency::find($this->payment_setting->payu_currency_id ?? null);
+            $currencyCode  = $payu_currency->currency_code ?? 'PLN';
+            $currencyRate  = (float) ($payu_currency->currency_rate ?? 1);
 
-            $price_eur = round(($calculate_price['total_amount'] ?? 0), 2);
-            $price_ron = round($price_eur * $exchangeRate, 2);
+            $payableAmount = round($totalAmount * $currencyRate, 2);
+            // PayU expects amount in smallest unit (grosze / bani)
+            $amountInCents = (int) round($payableAmount * 100);
 
-            // Date PayU Romania (test publice)
-            $pos_id = $this->payment_setting->payu_merchant_pos_id ?? '300746';
-            $client_id = $this->payment_setting->payu_client_id ?? '300746';
-            $client_secret = $this->payment_setting->payu_client_secret ?? 'b6ca15b75a0d1bdf0b6b3b5f47a2e9b1';
+            // ── PayU credentials ────────────────────────────
+            $posId   = $this->payment_setting->payu_merchant_pos_id ?? '';
+            $apiBase = $this->payuApiBase();
 
-            $apiBase = 'https://secure.snd.payu.com';
-            $order_id = uniqid('PAYU_');
-            $continue_url = route('payment.payu-callback');
-            $notify_url = route('payment.payu-callback');
-            $description = env('APP_NAME') . " Booking #" . $order_id;
+            $extOrderId  = 'MEM_' . time() . '_' . mt_rand(1000, 9999);
+            $continueUrl = route('payment.payu-callback');
+            $description = config('app.name') . ' – Booking ' . $extOrderId;
 
-            // Pregătim payload-ul pentru PayU
-            $body = [
-                'notifyUrl' => $notify_url,
-                'continueUrl' => $continue_url,
-                'customerIp' => $request->ip(),
-                'merchantPosId' => $pos_id,
-                'description' => $description,
-                'currencyCode' => $payuCurrency,
-                'totalAmount' => intval($price_ron * 100),
-                'extOrderId' => $order_id,
-                'buyer' => [
-                    'email' => $customerInfo['customer_email'],
-                    'phone' => $customerInfo['customer_phone'] ?: '0712345678',
-                    'firstName' => $customerInfo['customer_name'] ?: 'Client',
-                    'language' => 'ro'
+            // ── get OAuth2 token ────────────────────────────
+            $token = $this->payuGetToken();
+            if (!$token) {
+                return response()->json([
+                    'error' => 'Nu s-a putut obține tokenul PayU. Verifică credențialele.'
+                ], 500);
+            }
+
+            // ── build order payload ─────────────────────────
+            $payload = [
+                'notifyUrl'     => $continueUrl,
+                'continueUrl'   => $continueUrl,
+                'customerIp'    => $request->ip() ?: '127.0.0.1',
+                'merchantPosId' => $posId,
+                'description'   => $description,
+                'currencyCode'  => $currencyCode,
+                'totalAmount'   => $amountInCents,
+                'extOrderId'    => $extOrderId,
+                'buyer'         => [
+                    'email'     => $customerInfo['customer_email'] ?? 'guest@example.com',
+                    'phone'     => $customerInfo['customer_phone'] ?: '0000000000',
+                    'firstName' => $customerInfo['customer_name']  ?: 'Client',
+                    'language'  => 'ro',
                 ],
-                'products' => [
-                    [
-                        'name' => 'Tour Booking (' . $displayCurrency . ' → ' . $payuCurrency . ')',
-                        'unitPrice' => intval($price_ron * 100),
-                        'quantity' => 1
-                    ]
-                ]
+                'products'      => [[
+                    'name'      => 'Tour Booking',
+                    'unitPrice' => $amountInCents,
+                    'quantity'  => 1,
+                ]],
             ];
 
-            Log::info('PAYU REQUEST BODY', $body);
+            Log::info('PayU order payload', $payload);
 
-            // 1️⃣ Obținere token OAuth2 - corect (Basic Auth)
-            $curl = curl_init();
-            curl_setopt_array($curl, [
-                CURLOPT_URL => "$apiBase/pl/standard/user/oauth/authorize",
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_CUSTOMREQUEST => 'POST',
-                CURLOPT_POSTFIELDS => "grant_type=client_credentials",
-                CURLOPT_HTTPHEADER => [
-                    'Content-Type: application/x-www-form-urlencoded',
-                    'Authorization: Basic ' . base64_encode("{$client_id}:{$client_secret}")
-                ],
-            ]);
-            $response = curl_exec($curl);
-            curl_close($curl);
-            $response = json_decode($response, true);
-
-            Log::info('PAYU TOKEN RESPONSE', ['response' => $response]);
-
-            if (empty($response['access_token'])) {
-                throw new \Exception('❌ Nu s-a putut obține tokenul OAuth2 de la PayU.');
-            }
-
-            $token = $response['access_token'];
-
-            // 2️⃣ Creare comanda
+            // ── create order at PayU ────────────────────────
             $ch = curl_init();
             curl_setopt_array($ch, [
-                CURLOPT_URL => "$apiBase/api/v2_1/orders",
+                CURLOPT_URL            => "{$apiBase}/api/v2_1/orders",
                 CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_CUSTOMREQUEST => 'POST',
-                CURLOPT_POSTFIELDS => json_encode($body),
-                CURLOPT_HTTPHEADER => [
-                    "Content-Type: application/json",
-                    "Authorization: Bearer $token"
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => json_encode($payload),
+                CURLOPT_FOLLOWLOCATION => false,   // PayU returns 302 – we need the Location header
+                CURLOPT_HEADER         => true,
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json',
+                    "Authorization: Bearer {$token}",
                 ],
+                CURLOPT_TIMEOUT        => 30,
             ]);
-            $result = curl_exec($ch);
+            $rawResponse = curl_exec($ch);
+            $httpCode    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlErr     = curl_error($ch);
             curl_close($ch);
 
-            Log::info('PAYU RAW RESPONSE', ['result' => $result]);
-            $result = json_decode($result, true);
-
-            if (isset($result['status']['statusCode']) && $result['status']['statusCode'] === 'SUCCESS') {
-                $redirectUrl = $result['redirectUri'] ?? null;
-
-                Session::put('payu_order', [
-                    'order_id' => $order_id,
-                    'price' => $price_ron,
-                    'method' => 'PayU',
-                    'customer' => $customerInfo
-                ]);
-
-                Log::info('✅ PAYU REDIRECT URL', ['redirect' => $redirectUrl]);
-
-                if ($redirectUrl) {
-                    return redirect()->away($redirectUrl);
-                }
+            if ($curlErr) {
+                Log::error('PayU order cURL error', ['error' => $curlErr]);
+                return response()->json(['error' => 'Eroare comunicare PayU.'], 500);
             }
 
-            $errorMsg = $result['status']['statusDesc'] ?? 'Unexpected response from PayU.';
-            Log::error('PAYU ERROR RESPONSE', ['result' => $result]);
-            return back()->with('error', "Eroare PayU: {$errorMsg}");
+            // ── parse response ──────────────────────────────
+            // PayU can return 302 + Location header OR 200 with JSON body
+            $headerSize = strpos($rawResponse, "\r\n\r\n");
+            $headers    = substr($rawResponse, 0, $headerSize);
+            $body       = substr($rawResponse, $headerSize + 4);
+            $result     = json_decode($body, true);
+
+            Log::info('PayU order response', [
+                'httpCode' => $httpCode,
+                'body'     => $result,
+            ]);
+
+            // Extract redirect URL: prefer redirectUri in body, fall back to Location header
+            $redirectUrl = $result['redirectUri'] ?? null;
+            if (!$redirectUrl && preg_match('/^Location:\s*(.+)$/mi', $headers, $m)) {
+                $redirectUrl = trim($m[1]);
+            }
+
+            // Get the PayU orderId (different from our extOrderId)
+            $payuOrderId = $result['orderId'] ?? $extOrderId;
+
+            $statusCode = $result['status']['statusCode'] ?? '';
+            if ($redirectUrl && in_array($statusCode, ['SUCCESS', 'WARNING_CONTINUE_REDIRECT'], true)) {
+                // Store order context in session for callback
+                Session::put('payu_order', [
+                    'ext_order_id'  => $extOrderId,
+                    'payu_order_id' => $payuOrderId,
+                    'amount'        => $payableAmount,
+                    'method'        => 'PayU',
+                    'customer'      => $customerInfo,
+                ]);
+
+                Log::info('PayU redirect URL obtained', ['url' => $redirectUrl]);
+
+                // AJAX handler expects JSON with redirect_url
+                return response()->json(['redirect_url' => $redirectUrl]);
+            }
+
+            // Error path
+            $errorMsg = $result['status']['statusDesc']
+                     ?? $result['status']['codeLiteral']
+                     ?? 'Răspuns neașteptat de la PayU.';
+            Log::error('PayU order creation failed', ['result' => $result]);
+            return response()->json(['error' => "Eroare PayU: {$errorMsg}"], 422);
 
         } catch (\Exception $e) {
-            Log::error('PAYU EXCEPTION', ['message' => $e->getMessage()]);
-            return back()->with('error', 'PayU Error: ' . $e->getMessage());
+            Log::error('PayU exception', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['error' => 'Eroare PayU: ' . $e->getMessage()], 500);
         }
     }
 
+    /**
+     * Step 2 – PayU redirects user here after payment.
+     * Verifies the order status and creates the internal booking.
+     */
     public function payu_callback(Request $request)
     {
-        $payu_order = Session::get('payu_order');
-        if (!$payu_order) {
+        Log::info('=== PAYU CALLBACK ===', $request->all());
+
+        $payuOrder = Session::get('payu_order');
+        if (!$payuOrder) {
             return redirect()->route('user.bookings.index')->with([
-                'message' => 'Datele comenzii PayU lipsesc.',
-                'alert-type' => 'error'
+                'message'    => 'Datele comenzii PayU lipsesc din sesiune.',
+                'alert-type' => 'error',
             ]);
         }
 
-        $order_id = $payu_order['order_id'];
-        $customer = $payu_order['customer'];
-        $auth_user = Auth::guard('web')->user();
+        $payuOrderId = $payuOrder['payu_order_id'];
+        $customer    = $payuOrder['customer'];
+        $auth_user   = Auth::guard('web')->user();
+        $apiBase     = $this->payuApiBase();
 
-        $client_id = $this->payment_setting->payu_client_id ?? '300746';
-        $client_secret = $this->payment_setting->payu_client_secret ?? 'b6ca15b75a0d1bdf0b6b3b5f47a2e9b1';
-        $apiBase = 'https://secure.snd.payu.com';
-
-        // 1️⃣ Obțin token nou
-        $curl = curl_init();
-        curl_setopt_array($curl, [
-            CURLOPT_URL => "$apiBase/pl/standard/user/oauth/authorize",
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => "grant_type=client_credentials&client_id={$client_id}&client_secret={$client_secret}",
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/x-www-form-urlencoded',
-            ],
-        ]);
-        $response = curl_exec($curl);
-        curl_close($curl);
-        $response = json_decode($response, true);
-
-        if (empty($response['access_token'])) {
+        // ── get fresh token ─────────────────────────────
+        $token = $this->payuGetToken();
+        if (!$token) {
             return redirect()->route('user.bookings.index')->with([
-                'message' => 'Eroare PayU: nu s-a putut obține tokenul pentru verificare.',
-                'alert-type' => 'error'
+                'message'    => 'Eroare PayU: nu s-a putut obține tokenul pentru verificare.',
+                'alert-type' => 'error',
             ]);
         }
 
-        $token = $response['access_token'];
-
-        // 2️⃣ Verificare status comanda
-        $verifyCurl = curl_init();
-        curl_setopt_array($verifyCurl, [
-            CURLOPT_URL => "$apiBase/api/v2_1/orders/$order_id",
+        // ── verify order status ─────────────────────────
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL            => "{$apiBase}/api/v2_1/orders/{$payuOrderId}",
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CUSTOMREQUEST => 'GET',
-            CURLOPT_HTTPHEADER => [
-                "Authorization: Bearer $token",
-                "Content-Type: application/json",
+            CURLOPT_HTTPGET        => true,
+            CURLOPT_HTTPHEADER     => [
+                "Authorization: Bearer {$token}",
+                'Content-Type: application/json',
             ],
+            CURLOPT_TIMEOUT        => 15,
         ]);
-        $verifyResponse = curl_exec($verifyCurl);
-        curl_close($verifyCurl);
+        $raw = curl_exec($ch);
+        curl_close($ch);
 
-        $verifyResponse = json_decode($verifyResponse, true);
-        Log::info('PAYU VERIFY RESPONSE', $verifyResponse);
+        $verifyData = json_decode($raw, true);
+        Log::info('PayU verify response', ['data' => $verifyData]);
 
-        if (!empty($verifyResponse['orders'][0]['status']) && $verifyResponse['orders'][0]['status'] === 'COMPLETED') {
-            $transaction_id = $verifyResponse['orders'][0]['orderId'] ?? $order_id;
-            $this->create_order($auth_user, 'PayU', 'success', $transaction_id, $customer);
+        $orderStatus = $verifyData['orders'][0]['status'] ?? 'UNKNOWN';
+        $transactionId = $verifyData['orders'][0]['orderId'] ?? $payuOrderId;
+
+        if (in_array($orderStatus, ['COMPLETED', 'WAITING_FOR_CONFIRMATION'], true)) {
+            $order = $this->create_order($auth_user, 'PayU', 'success', $transactionId, $customer);
             Session::forget('payu_order');
 
-            return redirect()->route('user.bookings.index')->with([
-                'message' => 'Plata prin PayU a fost procesată și confirmată cu succes!',
-                'alert-type' => 'success'
-            ]);
+            return $this->successRedirect($order);
         }
 
-        $status = $verifyResponse['orders'][0]['status'] ?? 'UNKNOWN';
+        // Payment not completed – could be PENDING, CANCELED, etc.
+        Session::forget('payu_order');
+        Log::warning('PayU payment not completed', ['status' => $orderStatus]);
+
         return redirect()->route('user.bookings.index')->with([
-            'message' => "Plata PayU nu a fost finalizată. Status: {$status}",
-            'alert-type' => 'error'
+            'message'    => "Plata PayU nu a fost finalizată. Status: {$orderStatus}",
+            'alert-type' => 'error',
         ]);
     }
 
@@ -461,12 +529,9 @@ private function captureAgencyContextFromRequest(Request $request): void
 
         if (isset($response['status']) && $response['status'] == 'COMPLETED') {
             $auth_user = Auth::guard('web')->user();
-            $this->create_order($auth_user, 'Paypal', 'success', $request->PayerID, $customerInfo);
+            $order = $this->create_order($auth_user, 'Paypal', 'success', $request->PayerID, $customerInfo);
 
-            return redirect()->route('user.bookings.index')->with([
-                'message' => trans('translate.Your payment has been made successful. Thanks for your new purchase'),
-                'alert-type' => 'success'
-            ]);
+            return $this->successRedirect($order);
         }
 
         return redirect()->back()->with([
@@ -497,12 +562,9 @@ private function captureAgencyContextFromRequest(Request $request): void
                 $payId = $response->id;
 
                 $auth_user = Auth::guard('web')->user();
-                $this->create_order($auth_user, 'Razorpay', 'success', $payId, $customerInfo);
+                $order = $this->create_order($auth_user, 'Razorpay', 'success', $payId, $customerInfo);
 
-                return redirect()->route('user.bookings.index')->with([
-                    'message' => trans('translate.Your payment has been made successful. Thanks for your new purchase'),
-                    'alert-type' => 'success'
-                ]);
+                return $this->successRedirect($order);
             } catch (Exception $e) {
                 Log::info('Razorpay payment : ' . $e->getMessage());
             }
@@ -543,11 +605,12 @@ private function captureAgencyContextFromRequest(Request $request): void
 
         if ($response->status == 'success') {
             $auth_user = Auth::guard('web')->user();
-            $this->create_order($auth_user, 'Flutterwave', 'success', $tnx_id, $customerInfo);
+            $order = $this->create_order($auth_user, 'Flutterwave', 'success', $tnx_id, $customerInfo);
 
             return response()->json([
                 'status' => 'success',
-                'message' => trans('translate.Your payment has been made successful. Thanks for your new purchase')
+                'message' => trans('translate.Your payment has been made successful. Thanks for your new purchase'),
+                'redirect_url' => $order->agency_user_id ? route('agency.tourbooking.bookings.index') : route('user.bookings.index'),
             ]);
         }
 
@@ -587,11 +650,12 @@ private function captureAgencyContextFromRequest(Request $request): void
         $final_data = json_decode($response);
         if ($final_data->status == true) {
             $auth_user = Auth::guard('web')->user();
-            $this->create_order($auth_user, 'Paystack', 'success', $transaction, $customerInfo);
+            $order = $this->create_order($auth_user, 'Paystack', 'success', $transaction, $customerInfo);
 
             return response()->json([
                 'status' => 'success',
-                'message' => trans('translate.Your payment has been made successful. Thanks for your new purchase')
+                'message' => trans('translate.Your payment has been made successful. Thanks for your new purchase'),
+                'redirect_url' => $order->agency_user_id ? route('agency.tourbooking.bookings.index') : route('user.bookings.index'),
             ]);
         }
 
@@ -603,7 +667,7 @@ private function captureAgencyContextFromRequest(Request $request): void
 
     public function mollie_payment(Request $request)
     {
-        if (env('APP_MODE') == 'DEMO') {
+        if (config('app.mode') == 'DEMO') {
             return redirect()->back()->with([
                 'message' => trans('translate.This Is Demo Version. You Can Not Change Anything'),
                 'alert-type' => 'error'
@@ -630,7 +694,7 @@ private function captureAgencyContextFromRequest(Request $request): void
                     'currency' => $currency,
                     'value' => '' . $price . '',
                 ],
-                'description' => env('APP_NAME'),
+                'description' => config('app.name'),
                 'redirectUrl' => route('payment.mollie-callback'),
             ]);
 
@@ -657,12 +721,9 @@ private function captureAgencyContextFromRequest(Request $request): void
 
         if ($payment->isPaid()) {
             $auth_user = Auth::guard('web')->user();
-            $this->create_order($auth_user, 'Mollie', 'success', session()->get('payment_id'), $customerInfo);
+            $order = $this->create_order($auth_user, 'Mollie', 'success', session()->get('payment_id'), $customerInfo);
 
-            return redirect()->route('user.bookings.index')->with([
-                'message' => trans('translate.Your payment has been made successful. Thanks for your new purchase'),
-                'alert-type' => 'success'
-            ]);
+            return $this->successRedirect($order);
         }
 
         return redirect()->back()->with([
@@ -673,7 +734,7 @@ private function captureAgencyContextFromRequest(Request $request): void
 
     public function instamojo_payment(Request $request)
     {
-        if (env('APP_MODE') == 'DEMO') {
+        if (config('app.mode') == 'DEMO') {
             return redirect()->back()->with([
                 'message' => trans('translate.This Is Demo Version. You Can Not Change Anything'),
                 'alert-type' => 'error'
@@ -770,12 +831,9 @@ private function captureAgencyContextFromRequest(Request $request): void
 
         if ($data->success == true && $data->payment->status == 'Credit') {
             $auth_user = Auth::guard('web')->user();
-            $this->create_order($auth_user, 'Instamojo', 'success', $request->get('payment_id'), $customerInfo);
+            $order = $this->create_order($auth_user, 'Instamojo', 'success', $request->get('payment_id'), $customerInfo);
 
-            return redirect()->route('user.bookings.index')->with([
-                'message' => trans('translate.Your payment has been made successful. Thanks for your new purchase'),
-                'alert-type' => 'success'
-            ]);
+            return $this->successRedirect($order);
         }
 
         return redirect()->back()->with([
@@ -795,12 +853,9 @@ private function captureAgencyContextFromRequest(Request $request): void
         $customerInfo = $this->customerInfo($request);
         $auth_user = Auth::guard('web')->user();
 
-        $this->create_order($auth_user, 'Bank Payment', 'pending', $request->tnx_info, $customerInfo);
+        $order = $this->create_order($auth_user, 'Bank Payment', 'pending', $request->tnx_info, $customerInfo);
 
-        return redirect()->route('user.bookings.index')->with([
-            'message' => trans('translate.Your payment has been made. please wait for admin payment approval'),
-            'alert-type' => 'success'
-        ]);
+        return $this->successRedirect($order, trans('translate.Your payment has been made. please wait for admin payment approval'));
     }
 
     /* =======================
@@ -1023,7 +1078,25 @@ if ($bookAsAgency) {
     /* =======================
      * HELPERS
      * ======================= */
-     
+
+    /**
+     * Redirect to the correct dashboard after a successful payment.
+     * Agency bookings go to agency dashboard; regular bookings go to user dashboard.
+     */
+    private function successRedirect($order, ?string $message = null)
+    {
+        $message = $message ?? trans('translate.Your payment has been made successful. Thanks for your new purchase');
+
+        $route = !empty($order->agency_user_id)
+            ? 'agency.tourbooking.bookings.index'
+            : 'user.bookings.index';
+
+        return redirect()->route($route)->with([
+            'message'    => $message,
+            'alert-type' => 'success',
+        ]);
+    }
+
      /**
  * Ia ultima valoare pentru un key din global_settings.
  */

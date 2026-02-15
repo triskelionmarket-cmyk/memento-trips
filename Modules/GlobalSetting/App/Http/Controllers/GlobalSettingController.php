@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Coupon\App\Models\Coupon;
 use Modules\Course\App\Models\Course;
-use Modules\Category\Entities\Category;
+use Modules\Category\App\Models\Category;
 use Modules\Page\App\Models\CustomPage;
 use Modules\Partner\App\Models\Partner;
 use Modules\Blog\App\Models\BlogComment;
@@ -37,26 +37,21 @@ use Modules\NoticeBoard\App\Models\NoticeBoard;
 use Modules\Testimonial\App\Models\Testimonial;
 use Modules\Course\App\Models\CourseTranslation;
 use Modules\Course\App\Models\CourseModuleLesson;
-use Modules\Category\Entities\CategoryTranslation;
+use Modules\Category\App\Models\CategoryTranslation;
 use Modules\Page\App\Models\CustomPageTranslation;
 use Modules\Course\App\Models\CourseEnrollmentList;
 use Modules\GlobalSetting\App\Models\GlobalSetting;
 use Modules\SupportTicket\App\Models\SupportTicket;
 use Modules\Blog\App\Models\BlogCategoryTranslation;
-use Modules\Brand\Entities\Brand;
-use Modules\Brand\Entities\BrandTranslation;
+use Modules\Brand\App\Models\Brand;
+use Modules\Brand\App\Models\BrandTranslation;
 use Modules\ContactMessage\App\Models\ContactMessage;
 use Modules\PaymentGateway\App\Models\PaymentGateway;
 use Modules\SupportTicket\App\Models\MessageDocument;
 use Modules\PaymentWithdraw\App\Models\SellerWithdraw;
 use Modules\PaymentWithdraw\App\Models\WithdrawMethod;
 use Modules\CourseLevel\App\Models\CourseLevelTranslation;
-use Modules\Ecommerce\Entities\Cart;
-use Modules\Ecommerce\Entities\Order;
-use Modules\Ecommerce\Entities\Product;
-use Modules\Ecommerce\Entities\ProductGallery;
-use Modules\Ecommerce\Entities\ProductReview;
-use Modules\Ecommerce\Entities\ProductTranslation;
+
 use Modules\SupportTicket\App\Models\SupportTicketMessage;
 use Modules\Testimonial\App\Models\TestimonialTrasnlation;
 use Modules\GlobalSetting\App\Http\Requests\TawkChatRequest;
@@ -96,16 +91,16 @@ class GlobalSettingController extends Controller
     private function ensureInvoiceCompanyFields(): void
     {
         $defaults = [
-            'invoice_company_name'          => '',
+            'invoice_company_name' => '',
             'invoice_company_address_line1' => '',
             'invoice_company_address_line2' => '',
-            'invoice_company_vat_id'        => '', // VAT ID
-            'invoice_company_reg_no'        => '', // Registration No.
-            'invoice_company_eori'          => '', // EORI
-            'invoice_company_iban'          => '',
-            'invoice_company_bank_name'     => '',
-            'invoice_company_email'         => '',
-            'invoice_company_phone'         => '',
+            'invoice_company_vat_id' => '', // VAT ID
+            'invoice_company_reg_no' => '', // Registration No.
+            'invoice_company_eori' => '', // EORI
+            'invoice_company_iban' => '',
+            'invoice_company_bank_name' => '',
+            'invoice_company_email' => '',
+            'invoice_company_phone' => '',
         ];
 
         $existing = GlobalSetting::whereIn('key', array_keys($defaults))
@@ -116,8 +111,8 @@ class GlobalSettingController extends Controller
         foreach ($defaults as $key => $value) {
             if (!in_array($key, $existing, true)) {
                 $toInsert[] = [
-                    'key'        => $key,
-                    'value'      => $value,
+                    'key' => $key,
+                    'value' => $value,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -185,7 +180,8 @@ class GlobalSettingController extends Controller
             $logo_setting->value = $logo_name;
             $logo_setting->save();
 
-            if ($old_logo && File::exists(public_path($old_logo))) unlink(public_path($old_logo));
+            if ($old_logo && File::exists(public_path($old_logo)))
+                unlink(public_path($old_logo));
         }
 
         $footer_logo_setting = GlobalSetting::where('key', 'footer_logo')->first();
@@ -199,7 +195,8 @@ class GlobalSettingController extends Controller
             $request->footer_logo->move(public_path('uploads/website-images'), $logo_name);
             $footer_logo_setting->value = $logo_name;
             $footer_logo_setting->save();
-            if ($old_logo && File::exists(public_path($old_logo))) unlink(public_path($old_logo));
+            if ($old_logo && File::exists(public_path($old_logo)))
+                unlink(public_path($old_logo));
         }
 
         $secondary_logo_setting = GlobalSetting::where('key', 'secondary_logo')->first();
@@ -213,7 +210,8 @@ class GlobalSettingController extends Controller
             $request->secondary_logo->move(public_path('uploads/website-images'), $logo_name);
             $secondary_logo_setting->value = $logo_name;
             $secondary_logo_setting->save();
-            if ($old_logo && File::exists(public_path($old_logo))) unlink(public_path($old_logo));
+            if ($old_logo && File::exists(public_path($old_logo)))
+                unlink(public_path($old_logo));
         }
 
         $secondary_footer_logo_setting = GlobalSetting::where('key', 'secondary_footer_logo')->first();
@@ -227,7 +225,8 @@ class GlobalSettingController extends Controller
             $request->secondary_footer_logo->move(public_path('uploads/website-images'), $logo_name);
             $secondary_footer_logo_setting->value = $logo_name;
             $secondary_footer_logo_setting->save();
-            if ($old_logo && File::exists(public_path($old_logo))) unlink(public_path($old_logo));
+            if ($old_logo && File::exists(public_path($old_logo)))
+                unlink(public_path($old_logo));
         }
 
         $secondary_navmenu_logo_setting = GlobalSetting::where('key', 'secondary_navmenu_logo')->first();
@@ -241,7 +240,8 @@ class GlobalSettingController extends Controller
             $request->secondary_navmenu_logo->move(public_path('uploads/website-images'), $logo_name);
             $secondary_navmenu_logo_setting->value = $logo_name;
             $secondary_navmenu_logo_setting->save();
-            if ($old_logo && File::exists(public_path($old_logo))) unlink(public_path($old_logo));
+            if ($old_logo && File::exists(public_path($old_logo)))
+                unlink(public_path($old_logo));
         }
 
         $home3_logo_setting = GlobalSetting::where('key', 'home3_logo')->first();
@@ -255,7 +255,8 @@ class GlobalSettingController extends Controller
             $request->home3_logo->move(public_path('uploads/website-images'), $logo_name);
             $home3_logo_setting->value = $logo_name;
             $home3_logo_setting->save();
-            if ($old_logo && File::exists(public_path($old_logo))) unlink(public_path($old_logo));
+            if ($old_logo && File::exists(public_path($old_logo)))
+                unlink(public_path($old_logo));
         }
 
         $home3_footer_logo_setting = GlobalSetting::where('key', 'home3_footer_logo')->first();
@@ -269,7 +270,8 @@ class GlobalSettingController extends Controller
             $request->home3_footer_logo->move(public_path('uploads/website-images'), $logo_name);
             $home3_footer_logo_setting->value = $logo_name;
             $home3_footer_logo_setting->save();
-            if ($old_logo && File::exists(public_path($old_logo))) unlink(public_path($old_logo));
+            if ($old_logo && File::exists(public_path($old_logo)))
+                unlink(public_path($old_logo));
         }
 
         $logo_setting = GlobalSetting::where('key', 'favicon')->first();
@@ -283,7 +285,8 @@ class GlobalSettingController extends Controller
             $request->favicon->move(public_path('uploads/website-images'), $favicon_name);
             $logo_setting->value = $favicon_name;
             $logo_setting->save();
-            if ($old_favicon && File::exists(public_path($old_favicon))) unlink(public_path($old_favicon));
+            if ($old_favicon && File::exists(public_path($old_favicon)))
+                unlink(public_path($old_favicon));
         }
 
         $this->set_cache_setting();
@@ -379,18 +382,7 @@ class GlobalSettingController extends Controller
             Availability::truncate();
             Brand::truncate();
             BrandTranslation::truncate();
-            Cart::truncate();
-            Order::truncate();
-            ExtraCharge::truncate();
-            Destination::truncate();
-            DestinationTranslation::truncate();
-            Service::truncate();
-            ServiceTranslation::truncate();
-            ServiceType::truncate();
-            Product::truncate();
-            ProductGallery::truncate();
-            ProductReview::truncate();
-            ProductTranslation::truncate();
+
             Team::truncate();
 
             PrivacyPolicy::where('lang_code', '!=', 'en')->delete();
@@ -427,7 +419,8 @@ class GlobalSettingController extends Controller
             $notify_message = trans('translate.Database clear successfully');
             $notify_message = ['message' => $notify_message, 'alert-type' => 'success'];
             return redirect()->back()->with($notify_message);
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
             Log::error('Database clear failed: ' . $e->getMessage());
@@ -470,11 +463,12 @@ class GlobalSettingController extends Controller
             $ext = $image->getClientOriginalExtension();
             $logo_name = 'error-image-' . date('Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $ext;
             $logo_name = 'uploads/website-images/' . $logo_name;
-            Image::make($image)->save(public_path($logo_name));
+            Image::read($image)->save(public_path($logo_name));
             $setting->value = $logo_name;
             $setting->save();
 
-            if ($old_logo && File::exists(public_path($old_logo))) unlink(public_path($old_logo));
+            if ($old_logo && File::exists(public_path($old_logo)))
+                unlink(public_path($old_logo));
         }
 
         $this->set_cache_setting();
@@ -499,11 +493,12 @@ class GlobalSettingController extends Controller
             $ext = $image->getClientOriginalExtension();
             $logo_name = 'login-bg-image-' . date('Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $ext;
             $logo_name = 'uploads/website-images/' . $logo_name;
-            Image::make($image)->save(public_path($logo_name));
+            Image::read($image)->save(public_path($logo_name));
             $setting->value = $logo_name;
             $setting->save();
 
-            if ($old_logo && File::exists(public_path($old_logo))) unlink(public_path($old_logo));
+            if ($old_logo && File::exists(public_path($old_logo)))
+                unlink(public_path($old_logo));
         }
 
         $this->set_cache_setting();
@@ -528,11 +523,12 @@ class GlobalSettingController extends Controller
             $ext = $image->getClientOriginalExtension();
             $logo_name = 'admin-bg-image-' . date('Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $ext;
             $logo_name = 'uploads/website-images/' . $logo_name;
-            Image::make($image)->save(public_path($logo_name));
+            Image::read($image)->save(public_path($logo_name));
             $setting->value = $logo_name;
             $setting->save();
 
-            if ($old_logo && File::exists(public_path($old_logo))) unlink(public_path($old_logo));
+            if ($old_logo && File::exists(public_path($old_logo)))
+                unlink(public_path($old_logo));
         }
 
         $this->set_cache_setting();
@@ -557,11 +553,12 @@ class GlobalSettingController extends Controller
             $ext = $image->getClientOriginalExtension();
             $logo_name = 'breadcrumb-image-' . date('Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $ext;
             $logo_name = 'uploads/website-images/' . $logo_name;
-            Image::make($image)->save(public_path($logo_name));
+            Image::read($image)->save(public_path($logo_name));
             $setting->value = $logo_name;
             $setting->save();
 
-            if ($old_logo && File::exists(public_path($old_logo))) unlink(public_path($old_logo));
+            if ($old_logo && File::exists(public_path($old_logo)))
+                unlink(public_path($old_logo));
         }
 
         $this->set_cache_setting();
@@ -610,11 +607,12 @@ class GlobalSettingController extends Controller
             $ext = $image->getClientOriginalExtension();
             $logo_name = 'avatar-image-' . date('Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $ext;
             $logo_name = 'uploads/website-images/' . $logo_name;
-            Image::make($image)->save(public_path($logo_name));
+            Image::read($image)->save(public_path($logo_name));
             $setting->value = $logo_name;
             $setting->save();
 
-            if ($old_logo && File::exists(public_path($old_logo))) unlink(public_path($old_logo));
+            if ($old_logo && File::exists(public_path($old_logo)))
+                unlink(public_path($old_logo));
         }
 
         $this->set_cache_setting();
@@ -639,11 +637,12 @@ class GlobalSettingController extends Controller
             $ext = $image->getClientOriginalExtension();
             $logo_name = 'maintenance-image-' . date('Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $ext;
             $logo_name = 'uploads/website-images/' . $logo_name;
-            Image::make($image)->save(public_path($logo_name));
+            Image::read($image)->save(public_path($logo_name));
             $setting->value = $logo_name;
             $setting->save();
 
-            if ($old_logo && File::exists(public_path($old_logo))) unlink(public_path($old_logo));
+            if ($old_logo && File::exists(public_path($old_logo)))
+                unlink(public_path($old_logo));
         }
 
         GlobalSetting::where('key', 'maintenance_text')->update(['value' => $request->maintenance_text]);
@@ -672,6 +671,6 @@ class GlobalSettingController extends Controller
         foreach ($setting_data as $data_item) {
             $setting[$data_item->key] = $data_item->value;
         }
-        Cache::put('setting', (object) $setting);
+        Cache::put('setting', (object)$setting);
     }
 }

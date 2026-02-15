@@ -4,6 +4,8 @@ namespace Modules\PaymentGateway\App\Http\Controllers;
 
 // ── Framework Dependencies ──────────────────────────────────────────────────
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
+use Intervention\Image\Laravel\Facades\Image;
 use App\Http\Controllers\Controller;
 
 // ── Module Dependencies ─────────────────────────────────────────────────────
@@ -67,8 +69,7 @@ class PaymentGatewayController extends Controller
             $ext = $new_image->getClientOriginalExtension();
             $image_name = 'stripe-' . date('Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $ext;
             $image_name = 'uploads/website-images/' . $image_name;
-            Image::make($new_image)
-                ->save(public_path() . '/' . $image_name);
+            $new_image->move(public_path('uploads/website-images'), basename($image_name));
             $exist_image->value = $image_name;
             $exist_image->save();
             if ($old_image) {
@@ -100,7 +101,7 @@ class PaymentGatewayController extends Controller
             $ext = $new_image->getClientOriginalExtension();
             $image_name = 'paypal-' . date('Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $ext;
             $image_name = 'uploads/website-images/' . $image_name;
-            Image::make($new_image)
+            Image::read($new_image)
                 ->save(public_path() . '/' . $image_name);
             $exist_image->value = $image_name;
             $exist_image->save();
@@ -135,7 +136,7 @@ class PaymentGatewayController extends Controller
             $ext = $new_image->getClientOriginalExtension();
             $image_name = 'paypal-' . date('Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $ext;
             $image_name = 'uploads/website-images/' . $image_name;
-            Image::make($new_image)
+            Image::read($new_image)
                 ->save(public_path() . '/' . $image_name);
             $exist_image->value = $image_name;
             $exist_image->save();
@@ -168,7 +169,7 @@ class PaymentGatewayController extends Controller
             $ext = $new_image->getClientOriginalExtension();
             $image_name = 'paypal-' . date('Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $ext;
             $image_name = 'uploads/website-images/' . $image_name;
-            Image::make($new_image)
+            Image::read($new_image)
                 ->save(public_path() . '/' . $image_name);
             $exist_image->value = $image_name;
             $exist_image->save();
@@ -198,7 +199,7 @@ class PaymentGatewayController extends Controller
             $ext = $new_image->getClientOriginalExtension();
             $image_name = 'paypal-' . date('Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $ext;
             $image_name = 'uploads/website-images/' . $image_name;
-            Image::make($new_image)
+            Image::read($new_image)
                 ->save(public_path() . '/' . $image_name);
             $exist_image->value = $image_name;
             $exist_image->save();
@@ -230,7 +231,7 @@ class PaymentGatewayController extends Controller
             $ext = $new_image->getClientOriginalExtension();
             $image_name = 'paypal-' . date('Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $ext;
             $image_name = 'uploads/website-images/' . $image_name;
-            Image::make($new_image)
+            Image::read($new_image)
                 ->save(public_path() . '/' . $image_name);
             $exist_image->value = $image_name;
             $exist_image->save();
@@ -263,7 +264,7 @@ class PaymentGatewayController extends Controller
             $ext = $new_image->getClientOriginalExtension();
             $image_name = 'paypal-' . date('Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $ext;
             $image_name = 'uploads/website-images/' . $image_name;
-            Image::make($new_image)
+            Image::read($new_image)
                 ->save(public_path() . '/' . $image_name);
             $exist_image->value = $image_name;
             $exist_image->save();
@@ -292,7 +293,7 @@ class PaymentGatewayController extends Controller
             $ext = $new_image->getClientOriginalExtension();
             $image_name = 'paypal-' . date('Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $ext;
             $image_name = 'uploads/website-images/' . $image_name;
-            Image::make($new_image)
+            Image::read($new_image)
                 ->save(public_path() . '/' . $image_name);
             $exist_image->value = $image_name;
             $exist_image->save();
@@ -330,7 +331,7 @@ class PaymentGatewayController extends Controller
             $image_name = 'payu-' . date('Y-m-d-h-i-s-') . rand(999, 9999) . '.' . $ext;
             $image_name = 'uploads/website-images/' . $image_name;
 
-            \Image::make($new_image)->save(public_path() . '/' . $image_name);
+            \Image::read($new_image)->save(public_path() . '/' . $image_name);
             $exist_image->value = $image_name;
             $exist_image->save();
 

@@ -1,8 +1,5 @@
 <?php
 
-// Suppress E_DEPRECATED from vendor packages (Carbon v2 on PHP 8.5)
-error_reporting(E_ALL & ~E_DEPRECATED);
-
 /*
  |--------------------------------------------------------------------------
  | Create The Application

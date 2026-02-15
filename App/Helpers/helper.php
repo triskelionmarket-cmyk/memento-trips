@@ -31,15 +31,17 @@ function html_decode($text)
 
 function currency($amount)
 {
-
-    // currency information will be loaded from session value
-
-    $defaultCurrency = Currency::where('is_default', 'yes')->first();
-
-    $currency_icon = $defaultCurrency?->currency_icon ?? Session::get('currency_icon', '$');
-    $currency_code = $defaultCurrency?->currency_code ?? Session::get('currency_code', 'USD');
-    $currency_rate = $defaultCurrency?->currency_rate ?? Session::get('currency_rate', 1);
-    $currency_position = $defaultCurrency?->currency_position ?? Session::get('currency_position', 'before_price');
+    // Session takes priority (set by currency switcher), DB default as fallback
+    if (Session::has('currency_code')) {
+        $currency_icon = Session::get('currency_icon', '$');
+        $currency_rate = Session::get('currency_rate', 1);
+        $currency_position = Session::get('currency_position', 'before_price');
+    } else {
+        $defaultCurrency = Currency::where('is_default', 'yes')->first();
+        $currency_icon = $defaultCurrency?->currency_icon ?? '$';
+        $currency_rate = $defaultCurrency?->currency_rate ?? 1;
+        $currency_position = $defaultCurrency?->currency_position ?? 'before_price';
+    }
 
     $amount = $amount * $currency_rate;
     $amount = number_format($amount, 2, '.', ',');
@@ -61,15 +63,27 @@ function currency($amount)
 
 function currency_price($amount)
 {
-    $defaultCurrency = Currency::where('is_default', 'yes')->first();
-
-    $currency_rate = $defaultCurrency?->currency_rate ?? Session::get('currency_rate', 1);
+    if (Session::has('currency_code')) {
+        $currency_rate = Session::get('currency_rate', 1);
+    } else {
+        $defaultCurrency = Currency::where('is_default', 'yes')->first();
+        $currency_rate = $defaultCurrency?->currency_rate ?? 1;
+    }
     $amount = $amount * $currency_rate;
     return $amount;
 }
 
 function default_currency()
 {
+    if (Session::has('currency_code')) {
+        return [
+            'currency_rate' => Session::get('currency_rate', 1),
+            'currency_icon' => Session::get('currency_icon', '$'),
+            'currency_position' => Session::get('currency_position', 'before_price'),
+            'currency_code' => Session::get('currency_code', 'USD'),
+        ];
+    }
+
     $defaultCurrency = Currency::where('is_default', 'yes')->first();
     return [
         'currency_rate' => $defaultCurrency?->currency_rate ?? 1,
@@ -191,7 +205,7 @@ function checkModule($module_name)
 
 function getPageSections($arr = false)
 {
-    $jsonUrl = resource_path('views\admin') . '\settings.json';
+    $jsonUrl = resource_path('views' . DIRECTORY_SEPARATOR . 'admin') . DIRECTORY_SEPARATOR . 'settings.json';
     $sections = json_decode(file_get_contents($jsonUrl));
     if ($arr) {
         $sections = json_decode(file_get_contents($jsonUrl), true);

@@ -1,8 +1,8 @@
 <?php
 
-use Modules\Category\Http\Controllers\CategoryController;
+use Modules\Category\App\Http\Controllers\CategoryController;
 
-Route::group(['as'=> 'admin.', 'prefix' => 'admin', 'middleware' => ['auth:admin']],function (){
+Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['auth:admin']], function () {
 
     Route::resource('category', CategoryController::class);
 

@@ -13,7 +13,7 @@ use Illuminate\Support\ServiceProvider;
 
 // ── Module Models ───────────────────────────────────────────────────────────
 use Modules\Blog\App\Models\BlogCategory;
-use Modules\Category\Entities\Category;
+use Modules\Category\App\Models\Category;
 use Modules\Currency\App\Models\Currency;
 use Modules\GlobalSetting\App\Models\GlobalSetting;
 use Modules\Language\App\Models\Language;

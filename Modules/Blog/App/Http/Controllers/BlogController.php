@@ -6,7 +6,7 @@ namespace Modules\Blog\App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
-use Intervention\Image\Facades\Image;
+use Intervention\Image\Laravel\Facades\Image;
 use App\Http\Controllers\Controller;
 
 // ── Module Dependencies ─────────────────────────────────────────────────────
@@ -59,8 +59,8 @@ class BlogController extends Controller
         if ($request->image) {
             $image_name = 'blog-' . date('-Y-m-d-h-i-s-') . rand(999, 9999) . '.webp';
             $image_name = 'uploads/custom-images/' . $image_name;
-            Image::make($request->image)
-                ->encode('webp', 80)
+            Image::read($request->image)
+                ->toWebp(80)
                 ->save(public_path() . '/' . $image_name);
             $blog->image = $image_name;
         }
@@ -122,8 +122,8 @@ class BlogController extends Controller
             $old_image = $blog->image;
             $image_name = 'blog-' . date('-Y-m-d-h-i-s-') . rand(999, 9999) . '.webp';
             $image_name = 'uploads/custom-images/' . $image_name;
-            Image::make($request->image)
-                ->encode('webp', 80)
+            Image::read($request->image)
+                ->toWebp(80)
                 ->save(public_path() . '/' . $image_name);
             $blog->image = $image_name;
             $blog->save();

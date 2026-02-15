@@ -1,7 +1,7 @@
 <?php
 
 declare(strict_types=1);
-namespace Cms\Themes\Theme1\Src\Services;
+namespace Cms\themes\theme1\Src\Services;
 use App\Facades\Theme;
 use Illuminate\Support\Facades\Cache;
 

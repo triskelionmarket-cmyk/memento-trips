@@ -10,7 +10,7 @@
   <link rel="shortcut icon" href="{{ asset($general_setting->favicon) }}" type="image/x-icon">
   <!-- Site Title -->
 
-  <title>{{ env('APP_NAME') }} || {{ __('translate.Maintenance') }}</title>
+  <title>{{ config('app.name') }} || {{ __('translate.Maintenance') }}</title>
 
   <link rel="stylesheet" href="{{ asset('frontend/assets/css/bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ asset('frontend/assets/css/fontawesome.min.css') }}">
