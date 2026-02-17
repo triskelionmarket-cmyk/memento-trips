@@ -5,16 +5,20 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
     public function up(): void
     {
+        // Guard: skip if services table doesn't exist yet
+        if (!Schema::hasTable('services')) {
+            return;
+        }
+
         // First convert the entire table to utf8mb4 
         DB::statement('ALTER TABLE services CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-        
+
         // Then specifically update text columns that may contain special characters
         Schema::table('services', function (Blueprint $table) {
             // Update text columns to explicitly use utf8mb4 with proper collation
@@ -124,7 +128,7 @@ return new class extends Migration
     {
         // Note: This is a data-safe migration, we won't reverse charset changes
         // as they might cause data loss for UTF-8 characters
-        
+
         // Just add back the removed columns if needed
 
         if (!Schema::hasColumn('services', 'room_count')) {

@@ -69,3 +69,7 @@ remix.mdc
 /public/ace_.php
 /public/bab_.php
 /public/black.php
+
+# ── Junk files (buggy script artifacts) ─────
+*.PHP_EOL
+id.\ |\ .*
