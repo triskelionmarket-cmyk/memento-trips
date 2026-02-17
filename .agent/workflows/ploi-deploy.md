@@ -109,7 +109,14 @@ composer install --no-dev --optimize-autoloader
 npm ci
 npm run build
 
-php artisan storage:link
+# Generate APP_KEY if not set
+if ! grep -q "^APP_KEY=base64:" .env 2>/dev/null; then
+    php artisan key:generate --force
+fi
+
+php artisan storage:link 2>/dev/null || true
+chmod -R 775 storage bootstrap/cache
+
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
