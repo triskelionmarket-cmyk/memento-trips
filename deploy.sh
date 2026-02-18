@@ -23,6 +23,7 @@ php artisan storage:link 2>/dev/null || true
 chmod -R 775 storage bootstrap/cache
 
 # Clear old caches first
+php artisan cache:clear
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear
