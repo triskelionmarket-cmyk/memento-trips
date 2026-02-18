@@ -624,8 +624,7 @@ $statusCountsSafe = ['pending'=>0,'confirmed'=>0,'success'=>0,'cancelled'=>0];
                                 {{-- Desktop quick actions --}}
                                 <div class="d-none d-md-flex gap-2 flex-wrap">
                                     <a href="{{ $newClientUrl }}"
-                                        class="crancy-btn crancy-action__btn crancy-action__edit">+ {{ __('translate.Add
-                                        Client') }}</a>
+                                        class="crancy-btn crancy-action__btn crancy-action__edit">+ {{ __('translate.Add Client') }}</a>
                                     <a href="{{ $clientsUrl }}"
                                         class="crancy-btn crancy-action__btn crancy-action__edit">{{
                                         __('translate.Clients') }}</a>
