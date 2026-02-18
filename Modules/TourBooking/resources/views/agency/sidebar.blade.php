@@ -23,9 +23,9 @@
             id="pt-agency-bookings">
             <ul class="pt-nav">
                 <li class="pt-item {{ Route::is('agency.tourbooking.bookings.index') ? 'is-active' : '' }}">
-                    <a class="pt-link" href="{{ route('agency.tourbooking.bookings.index') }}">&PLACEHOLDER
-                        Bookings') }}</a>
+                    <a class="pt-link" href="{{ route('agency.tourbooking.bookings.index') }}">{{ __('translate.All Bookings') }}</a>
                 </li>
             </ul>
         </div>
-        <
+    </li>
+</ul>
