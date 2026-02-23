@@ -40,12 +40,6 @@ return new class extends Migration {
             });
         }
 
-        if (!Schema::hasColumn('services', 'destination_id')) {
-            Schema::table('services', function (Blueprint $table) {
-                $table->foreignId('destination_id')->nullable()->after('user_id')->constrained('destinations')->onDelete('set null');
-            });
-        }
-
         if (!Schema::hasColumn('services', 'is_new')) {
             Schema::table('services', function (Blueprint $table) {
                 $table->boolean('is_new')->default(false)->after('status');

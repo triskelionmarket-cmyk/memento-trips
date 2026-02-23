@@ -8,9 +8,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('availabilities', function (Blueprint $table) {
-            // JSON dacă ai MySQL 5.7+; dacă nu e sigur, folosește longText (comentariul de mai jos)
-            $table->json('age_categories')->nullable()->after('per_children_price');
-            // alternativ: $table->longText('age_categories')->nullable()->after('per_children_price');
+            if (!Schema::hasColumn('availabilities', 'age_categories')) {
+                $table->json('age_categories')->nullable()->after('per_children_price');
+            }
         });
     }
 

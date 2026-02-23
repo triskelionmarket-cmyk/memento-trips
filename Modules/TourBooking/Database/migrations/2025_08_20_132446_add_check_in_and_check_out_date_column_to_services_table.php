@@ -4,16 +4,19 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
     public function up(): void
     {
         Schema::table('services', function (Blueprint $table) {
-            $table->date('check_in_date')->nullable();
-            $table->date('check_out_date')->nullable();
+            if (!Schema::hasColumn('services', 'check_in_date')) {
+                $table->date('check_in_date')->nullable();
+            }
+            if (!Schema::hasColumn('services', 'check_out_date')) {
+                $table->date('check_out_date')->nullable();
+            }
         });
     }
 

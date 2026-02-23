@@ -4,15 +4,16 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
     public function up(): void
     {
         Schema::table('availabilities', function (Blueprint $table) {
-            $table->decimal('per_children_price', 10, 2)->nullable()->comment('Override default price for this date');
+            if (!Schema::hasColumn('availabilities', 'per_children_price')) {
+                $table->decimal('per_children_price', 10, 2)->nullable()->comment('Override default price for this date');
+            }
         });
     }
 
